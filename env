@@ -1,0 +1,112 @@
+#--------------------------------------------------------------------
+# Hithachintak Abhiyan — Environment Configuration
+#
+# Copy this file to `.env` and fill in the values for your environment.
+# `.env` is gitignored — never commit real credentials.
+#
+# Payment (Cashfree, per-Prant), SMS/WhatsApp (MSG91) and Email
+# credentials are NOT set here — they're configured at runtime from
+# Settings & Integrations (Super Admin only) and stored encrypted in
+# the database. This file only covers infrastructure-level config.
+#--------------------------------------------------------------------
+
+#--------------------------------------------------------------------
+# ENVIRONMENT
+#--------------------------------------------------------------------
+
+# development | testing | production
+CI_ENVIRONMENT = development
+
+#--------------------------------------------------------------------
+# APP
+#--------------------------------------------------------------------
+
+app.baseURL = 'http://localhost:8080/'
+
+# Set to true in production once you're serving over HTTPS.
+app.forceGlobalSecureRequests = false
+
+#--------------------------------------------------------------------
+# COOKIE
+#--------------------------------------------------------------------
+
+# Set to true in production (requires HTTPS) so the session cookie is
+# never sent over plain HTTP.
+# cookie.secure = false
+
+#--------------------------------------------------------------------
+# DATABASE
+#--------------------------------------------------------------------
+
+database.default.hostname = localhost
+database.default.database = kadamba_hithachintak
+database.default.username =
+database.default.password =
+database.default.DBDriver = MySQLi
+database.default.port = 3306
+
+#--------------------------------------------------------------------
+# ENCRYPTION
+#--------------------------------------------------------------------
+
+# Required — used to encrypt Cashfree/MSG91/SMTP credentials at rest.
+# Generate with: php spark key:generate
+# NEVER reuse the key from a dev/demo environment — it decrypts every
+# stored secret. Losing this key makes all stored credentials
+# unrecoverable (they'll need to be re-entered under Settings).
+encryption.key =
+
+#--------------------------------------------------------------------
+# SESSION
+#--------------------------------------------------------------------
+
+# File-based sessions are fine for a single app server. If you run more
+# than one app server behind a load balancer, switch to the Database
+# or Redis handler so all servers share session state.
+# session.driver = 'CodeIgniter\Session\Handlers\FileHandler'
+
+#--------------------------------------------------------------------
+# DEV-ONLY BOOTSTRAP SUPER ADMIN
+#--------------------------------------------------------------------
+
+# Used only by `php spark db:seed DevSuperAdminSeeder` to create the
+# first login. In production, either set both of these to a strong
+# phone/password before seeding, or (simpler) leave them unset — the
+# seeder then refuses to run against a production environment, and you
+# create the first Super Admin manually instead (see README).
+# seed.superAdminPhone =
+# seed.superAdminPassword =
+
+#--------------------------------------------------------------------
+# DEV ADMIN (Settings & Integrations + Roles & Permissions only)
+#--------------------------------------------------------------------
+
+# Used by `php spark db:seed DevAdminSeeder` to create the one Dev Admin
+# account. Unlike the Super Admin seeder above, both of these are
+# required in every environment — there's no random-password fallback,
+# since this is a specific chosen credential, not a bootstrap
+# convenience. Re-running the seeder with a new password rotates the
+# existing account rather than creating a second one.
+# seed.devAdminPhone =
+# seed.devAdminPassword =
+
+#--------------------------------------------------------------------
+# LOGGER
+#--------------------------------------------------------------------
+
+# logger.threshold = 4
+
+#--------------------------------------------------------------------
+# GEO-RESTRICTION (India-only access)
+#--------------------------------------------------------------------
+
+# Off by default — deliberately. Turning this on 403s every request
+# from an IP outside a bundled India IP-range dataset (see
+# app/Libraries/Security/data/india-ipv4.txt for its source and fetch
+# date — refresh that file periodically, IP allocations change). A VPN
+# or transit route can put a real India-based user outside these
+# ranges, and payment-gateway webhooks are always exempt (see
+# Config\GeoRestrict) since Cashfree's own servers aren't in India.
+# If you run behind a reverse proxy/CDN, also set app.proxyIPs in
+# Config\App so the real client IP is detected instead of the proxy's.
+# GeoRestrict.enabled = true

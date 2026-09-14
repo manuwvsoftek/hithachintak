@@ -1,0 +1,16 @@
+Fonts in this directory are used for rendering the multi-language receipt PDF
+and are licensed under the SIL Open Font License, Version 1.1.
+Full license text: https://scripts.sil.org/OFL
+
+NotoSans-Regular.ttf, NotoSans-Bold.ttf
+  Noto Sans, Copyright 2022 The Noto Project Authors.
+  https://github.com/notofonts/latin-greek-cyrillic
+
+Lohit-Gujarati.ttf, Lohit-Bengali.ttf, Lohit-Assamese.ttf, Lohit-Tamil.ttf,
+Lohit-Odia.ttf, Lohit-Gurmukhi.ttf, Lohit-Malayalam.ttf
+  Lohit fonts, Copyright 2006 Modular Infotech Pvt Ltd, Copyright 2009 Red Hat, Inc.
+  https://pagure.io/lohit
+
+Devanagari (Hindi/Marathi), Kannada, Telugu and Meetei Mayek receipts use the
+FreeSerif, Lohit Kannada, Pothana2000 and Eeyek fonts bundled with the mPDF
+library itself (vendor/mpdf/mpdf/ttfonts/), also OFL-licensed.

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>You're offline — Hithachintak Abhiyan</title>
+  <style>
+    :root{--bg:#F5F1E8;--ink:#182338;--ink-soft:#5B6577;--orange:#E8710A;--blue:#0E2A52}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);
+      font:15px/1.5 "Noto Sans","Segoe UI",system-ui,sans-serif;color:var(--ink);padding:24px}
+    .card{max-width:340px;text-align:center;background:#fff;border:1px solid #E7E0D0;border-radius:16px;padding:32px 24px}
+    .mark{width:56px;height:56px;border-radius:16px;background:var(--blue);color:#fff;display:flex;align-items:center;
+      justify-content:center;margin:0 auto 16px;font-weight:800;font-size:22px;font-family:Montserrat,sans-serif}
+    h1{font-size:17px;margin:0 0 8px;color:var(--blue)}
+    p{color:var(--ink-soft);margin:0 0 20px;font-size:13.5px}
+    button{background:var(--orange);color:#fff;border:none;border-radius:9px;padding:11px 20px;font-weight:700;
+      font-size:13.5px;cursor:pointer;font-family:inherit}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark">H</div>
+    <h1>You're offline</h1>
+    <p>New enrolments, OTP verification and payments need a live connection — please reconnect and try again. Anything you already loaded on this device is still here.</p>
+    <button onclick="location.reload()">Try again</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "Hithachintak Abhiyan — Karyakarta",
+  "short_name": "Hithachintak",
+  "description": "Field enrolment and collection app for VHP Hithachintak Abhiyan Karyakartas",
+  "id": "/app",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F1E8",
+  "theme_color": "#0E2A52",
+  "orientation": "portrait",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Hithachintak Enrolment",
+      "short_name": "New Enrolment",
+      "description": "Skip straight to a Hithachintak enrolment — programme and your location are pre-filled",
+      "url": "/admin/enrolments/new?programme=hc",
+      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
