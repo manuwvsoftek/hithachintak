@@ -28,8 +28,8 @@ class EnrolmentController extends BaseController
      */
     public const PROFESSIONS = [
         'Agriculture', 'Armed Forces', 'Business', 'CA/CS', 'Doctor', 'Educator',
-        'Engineer', 'Govt/PSU/Public Service', 'Home Maker', 'Private Service',
-        'Retired', 'Social Service/NGO', 'Self Employed', 'Student', 'Others',
+        'Engineer', 'Govt/PSU/Public Service', 'Home Maker', 'Pracharak', 'Private Service',
+        'Retired', 'Sangh Parivar', 'Social Service/NGO', 'Self Employed', 'Student', 'Others',
     ];
 
     private function service(): EnrolmentService
