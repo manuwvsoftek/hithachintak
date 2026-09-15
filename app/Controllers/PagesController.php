@@ -18,7 +18,7 @@ class PagesController extends BaseController
     {
         return view('pages/about', ['title' => 'About this platform']);
     }
-     public function privacyPolicy()
+    public function privacyPolicy()
     {
         return view('pages/privacypolicy', ['title' => 'Privacy Policy']);
     }

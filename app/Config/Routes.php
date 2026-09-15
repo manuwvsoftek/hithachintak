@@ -39,6 +39,7 @@ $routes->get('contact-us', 'PagesController::contactUs');
 $routes->get('privacypolicy', 'PagesController::privacyPolicy');
 $routes->get('termsconditions', 'PagesController::termsConditions');
 $routes->get('services', 'PagesController::services');
+
 // --- Cascading location dropdowns (JSON), used by enrolment + masters forms ---
 $routes->group('api/locations', ['filter' => 'authGuard'], static function ($routes) {
     $routes->get('jilas/(:num)', 'Api\LocationApiController::jilas/$1');

@@ -149,9 +149,12 @@ class ContentSecurityPolicy extends BaseConfig
     /**
      * Lists valid endpoints for submission from `<form>` tags.
      *
+     * The Cashfree drop-in checkout posts the payment form directly to
+     * Cashfree's own checkout host (sandbox or live), not back to us.
+     *
      * @var list<string>|string
      */
-    public $formAction = 'self';
+    public $formAction = ['self', 'https://sandbox.cashfree.com', 'https://api.cashfree.com', 'https://payments.cashfree.com'];
 
     /**
      * Specifies the sources that can embed the current page.
@@ -167,9 +170,13 @@ class ContentSecurityPolicy extends BaseConfig
      * The frame-src directive restricts the URLs which may
      * be loaded into nested browsing contexts.
      *
+     * Left null, this falls back to child-src ('self'), which blocks the
+     * iframe the Cashfree SDK opens for its checkout UI — so it must be
+     * set explicitly here.
+     *
      * @var list<string>|string|null
      */
-    public $frameSrc;
+    public $frameSrc = ['self', 'https://sdk.cashfree.com', 'https://sandbox.cashfree.com', 'https://api.cashfree.com', 'https://payments.cashfree.com'];
 
     /**
      * Restricts the origins allowed to deliver video and audio.

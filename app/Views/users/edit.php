@@ -48,6 +48,7 @@
         <div class="field" data-loc-level="0" data-variant="multi" hidden>
           <label class="f-label">Prant(s)</label>
           <div class="check-list" data-prant-multi>
+            <?php $targetPrantIds = array_map('intval', $targetPrantIds); ?>
             <?php foreach ($prants as $p): ?>
               <label class="check-item"><input type="checkbox" name="prant_ids[]" value="<?= $p['id'] ?>" <?= in_array((int) $p['id'], $targetPrantIds, true) ? 'checked' : '' ?>> <?= esc($p['name']) ?></label>
             <?php endforeach; ?>
@@ -147,6 +148,7 @@
         <div class="field" data-loc-level="2" data-variant="multi" hidden>
           <label class="f-label">Prakhand(s)</label>
           <div class="check-list" data-prakhand-multi>
+            
             <?php foreach ($prakhands as $pr): ?>
               <label class="check-item"><input type="checkbox" name="prakhand_ids[]" value="<?= $pr['id'] ?>" <?= in_array((int) $pr['id'], $targetPrakhandIds, true) ? 'checked' : '' ?>> <?= esc($pr['name']) ?></label>
             <?php endforeach; ?>
