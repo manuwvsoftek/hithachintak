@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="author" content="Shreedhar Bhat, Manu K, World Vision Softek">
   <title><?= esc($title ?? 'Hithachintak Abhiyan') ?></title>
-  <link rel="icon" href="<?= base_url('assets/images/logo-placeholder.svg') ?>">
+  <link rel="icon" href="<?= base_url('assets/images/logo-placeholder.jpeg') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>?v=<?= filemtime(FCPATH . 'assets/css/app.css') ?>">
   <?= $this->include('partials/pwa_head') ?>
 </head>
@@ -13,7 +13,7 @@
   <div class="auth-page">
     <div class="auth-shell">
       <div class="auth-brand">
-        <div class="brand-mark"><img src="<?= base_url('assets/images/logo-placeholder.svg') ?>" alt=""></div>
+        <div class="brand-mark"><img src="<?= base_url('assets/images/logo-placeholder.jpeg') ?>" alt=""></div>
         <div>
           <h1>VHP Hithachintak Abhiyan</h1>
           <p>Enrolment, Collection &amp; Receipting Platform<br>Hithachintak &middot; Dharma Raksha Nidhi &middot; Magazine Subscription</p>

@@ -37,7 +37,7 @@
 <div class="head">
   <table class="head-table">
     <tr>
-      <td style="width:34px"><div class="mark"><img src="<?= base_url('assets/images/logo-placeholder.svg') ?>" alt="" height="38"></div></td>
+      <td style="width:34px"><div class="mark"><img src="<?= base_url('assets/images/logo-placeholder.jpeg') ?>" alt="" height="38"></div></td>
       <td style="padding-left:10px">
         <div class="trust-name"><?= esc($trustName) ?></div>
         <div class="trust-sub"><?= esc($t['receiptTitle']) ?> &middot; Hithachintak Abhiyan</div>

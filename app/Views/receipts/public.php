@@ -3,7 +3,7 @@
 
 <div class="receipt-card">
   <div class="receipt-head">
-    <div class="receipt-head-logo"><img src="<?= base_url('assets/images/logo-placeholder.svg') ?>" alt=""></div>
+    <div class="receipt-head-logo"><img src="<?= base_url('assets/images/logo-placeholder.jpeg') ?>" alt=""></div>
     <div class="receipt-head-titles">
       <div class="receipt-head-trust"><?= esc($trustName) ?></div>
       <div class="receipt-head-sub"><?= esc($t['receiptTitle']) ?> &middot; Hithachintak Abhiyan</div>
