@@ -253,7 +253,7 @@ class SettingsController extends BaseController
         $gcModel = new GatewayCredentialModel();
 
         $gateways = array_map(static function ($p) use ($gcModel) {
-            $row = $gcModel->forPrant((int) $p['id']);
+            $row = $gcModel->forPrant($p['id']);
 
             return [
                 'prant'    => $p,
