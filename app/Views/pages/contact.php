@@ -5,7 +5,7 @@
   <div class="panel-title" style="margin-bottom:10px">Contact Us</div>
   <p class="panel-note">Select your Prant to view its registered Trust's contact details.</p>
 
-  <form method="get" class="field" style="margin:14px 0 0">
+  <form method="get" action="<?= site_url('contact-us') ?>" class="field" style="margin:14px 0 0">
     <label class="f-label" for="prant_id">Prant</label>
     <select class="f-input js-auto-submit" id="prant_id" name="prant_id">
       <option value="">Select Prant…</option>

@@ -8,6 +8,7 @@
   <title><?= esc($title ?? 'Hithachintak Abhiyan') ?></title>
   <link rel="icon" href="<?= base_url('assets/images/logo-placeholder.jpeg') ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>?v=<?= filemtime(FCPATH . 'assets/css/app.css') ?>">
+  <script src="<?= base_url('assets/js/app.js') ?>" defer></script>
 </head>
 <body>
   <div class="public-page">
