@@ -20,6 +20,10 @@ use CodeIgniter\Exceptions\PageNotFoundException;
 
 class UsersController extends BaseController
 {
+    public const AYAMS = [
+        'Bajrang Dal', 'Dharma Prasar', 'Dharma Yatra', 'Dharmacharya Sampark', 'Durgavahini', 'Goraksha', 'Mandir & Archak Purohit', 'Matrushakti', 'Naitik Shiksha', 'Prachar Prasar', 'Samajik Samarasata', 'Sangathan', 'Sanskrit & Ved Vidyalay', 'Satsang', 'Seva', 'Vidhi Prakostha', 'Vishesh Sampark'
+    ];
+
     public function index()
     {
         $userModel = new UserModel();
@@ -84,6 +88,7 @@ class UsersController extends BaseController
             'drafts'         => (new UserDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
             'resumeDraftId'  => $resumeId !== '' ? $resumeId : null,
             'resumeDraft'    => $resumeDraft,
+            'ayams'       => self::AYAMS,
         ]);
     }
 
@@ -281,6 +286,7 @@ class UsersController extends BaseController
             'aadhar_number'       => $this->request->getPost('aadhar_number') ?: null,
             'email'               => $this->request->getPost('email') ?: null,
             'profession'          => $this->request->getPost('profession') ?: null,
+            'ayam'          => $this->request->getPost('ayam') ?: null,
             'status'              => 'active',
             'must_reset_password' => $adminPassword === '',
             'created_by'          => $actor->id,
@@ -332,6 +338,7 @@ class UsersController extends BaseController
             'targetPrantIds'    => \App\Libraries\Rbac\LocationScope::prantIds($target) ?? [],
             'targetJilaIds'     => \App\Libraries\Rbac\LocationScope::jilaIds($target) ?? [],
             'targetPrakhandIds' => \App\Libraries\Rbac\LocationScope::prakhandIds($target) ?? [],
+            'ayams'       => self::AYAMS,
         ]);
     }
 
@@ -381,6 +388,7 @@ class UsersController extends BaseController
             'aadhar_number' => $this->request->getPost('aadhar_number') ?: null,
             'email'         => $this->request->getPost('email') ?: null,
             'profession'    => $this->request->getPost('profession') ?: null,
+            'ayam'          =>  $this->request->getPost('ayam') ?: null,
         ]);
 
         if (! $updated) {

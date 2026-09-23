@@ -127,6 +127,7 @@ class EnrolmentService
             'pincode'        => $data['pincode'] ?? null,
             'pan'            => $data['pan'] ?? null,
             'preferred_lang' => $data['language'] ?? 'en',
+            'gender'         => $data['gender'] ?? null,
         ]);
 
         $enrolmentId = $this->enrolments->insert([
@@ -150,6 +151,7 @@ class EnrolmentService
                 'age_or_dob'     => $fm['age_or_dob'],
                 'profession'     => $fm['profession'] ?? null,
                 'contact_number' => $fm['contact_number'] ?? null,
+                'gender'         => $fm['gender'] ?? null,
             ]);
         }
 

@@ -14,7 +14,7 @@ class MemberModel extends Model
     protected $useTimestamps  = true;
 
     protected $allowedFields = [
-        'phone', 'email', 'name', 'first_name', 'last_name', 'age_or_dob', 'profession', 'address', 'pincode', 'preferred_lang', 'pan',
+        'phone', 'email', 'name', 'first_name', 'last_name', 'age_or_dob','gender', 'profession', 'address', 'pincode', 'preferred_lang', 'pan',
     ];
 
     /**
@@ -27,6 +27,7 @@ class MemberModel extends Model
         'phone' => 'required|regex_match[/^[6-9][0-9]{9}$/]',
         'name'  => 'required|min_length[2]|max_length[150]',
         'pan'   => 'permit_empty|regex_match[/^[A-Z]{5}[0-9]{4}[A-Z]$/]',
+        'gender' => 'required|in_list[Male,Female,Other]',
     ];
 
     /**
@@ -46,7 +47,21 @@ class MemberModel extends Model
         }
 
         $id = $this->insert($data, true);
+         // insert() returns false on validation failure. find() only
+        // narrows to one row for a numeric/string id — passed false (or
+        // any other id it can't use), it silently falls back to
+        // returning every member row instead, so this must be checked
+        // here rather than left for the caller to discover as a mangled
+        // result.
+          if ($id === false) {
+            throw new \InvalidArgumentException($this->firstValidationError());
+        }
 
         return $this->find($id);
+    }
+
+    private function firstValidationError(): string
+    {
+        return array_values($this->errors())[0] ?? 'Could not save member details — check the entered details.';
     }
 }

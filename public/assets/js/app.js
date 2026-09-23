@@ -97,7 +97,8 @@
     var prantAll       = form.querySelector('[data-prant-all]');
     var jilaAll        = form.querySelector('[data-jila-all]');
     var prakhandAll    = form.querySelector('[data-prakhand-all]');
-
+    var ayamField      = form.querySelector('[data-ayam-field]');
+    var ayamSelect     = form.querySelector('#ayamSelect');
     function fillSelect(sel, items) {
       if (!sel) return;
       var current = sel.value;
@@ -220,11 +221,30 @@
         }
       });
     }
-    if (roleSelect) {
-      roleSelect.addEventListener('change', applyDepth);
-      applyDepth();
-    }
 
+  function applyAyamVisibility() {
+    if (!roleSelect || !ayamField || !ayamSelect) return;
+
+    var role = roleSelect.value;
+
+    var showAyam = role === 'karyakarta';
+
+    ayamField.hidden = !showAyam;
+    ayamSelect.disabled = !showAyam;
+
+    if (!showAyam) {
+        ayamSelect.value = '';
+    }
+  }
+    if (roleSelect) {
+    roleSelect.addEventListener('change', function () {
+        applyDepth();
+        applyAyamVisibility();
+    });
+
+    applyDepth();
+    applyAyamVisibility();
+}
     // ---- Client-side validation: instant feedback instead of a server
     // round-trip that (before this) threw away everything typed. Generic
     // over whatever [data-loc-level] fields are currently visible, so it

@@ -32,6 +32,7 @@ class EnrolmentController extends BaseController
         'Retired', 'Sangh Parivar', 'Social Service/NGO', 'Self Employed', 'Student', 'Others',
     ];
 
+    
     private function service(): EnrolmentService
     {
         return new EnrolmentService();
@@ -397,6 +398,7 @@ class EnrolmentController extends BaseController
             'pincode'           => 'required|regex_match[/^[0-9]{6}$/]',
             'email'             => 'permit_empty|valid_email',
             'amount'            => 'permit_empty|numeric',
+            'gender'            => 'required',
         ];
 
         // PAN is mandatory only for the Autopay Monthly Donation programme
@@ -430,6 +432,7 @@ class EnrolmentController extends BaseController
         $familyAges        = $this->request->getPost('family_age') ?? [];
         $familyProfessions = $this->request->getPost('family_profession') ?? [];
         $familyContacts    = $this->request->getPost('family_contact') ?? [];
+        $familyGender      = $this->request->getPost('family_gender') ?? [];
         $familyMembers     = [];
         foreach ($familyFirstNames as $i => $firstName) {
             $familyMembers[] = [
@@ -438,6 +441,7 @@ class EnrolmentController extends BaseController
                 'age_or_dob'     => $familyAges[$i] ?? null,
                 'profession'     => $familyProfessions[$i] ?? null,
                 'contact_number' => $familyContacts[$i] ?? null,
+                'gender'         =>  $familyGender[$i] ?? null,
             ];
         }
 
@@ -464,6 +468,7 @@ class EnrolmentController extends BaseController
                 'pan'               => ! empty($post['member_pan']) ? $post['member_pan'] : null,
                 'amount'            => $post['amount'] ?? 0,
                 'family_members'    => $familyMembers,
+                'gender'            => $post['gender'],
             ], $this->currentUser());
         } catch (\InvalidArgumentException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());

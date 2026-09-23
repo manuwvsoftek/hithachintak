@@ -118,7 +118,11 @@
     "scanToVerify": "Scan to verify this receipt online",
     "verifyOnline": "Verify online",
     "thankYouNote": "Thank you for your generous contribution towards Hithachintak Abhiyan.",
-    "noSignatureNote": "This is a system-generated receipt and does not require a signature."
+    "noSignatureNote": "This is a system-generated receipt and does not require a signature.",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
   },
   "hi": {
     "label": "Hindi",
@@ -239,7 +243,11 @@
     "scanToVerify": "इस रसीद को ऑनलाइन सत्यापित करने के लिए स्कैन करें",
     "verifyOnline": "ऑनलाइन सत्यापित करें",
     "thankYouNote": "हिताचिंतक अभियान में आपके उदार योगदान के लिए धन्यवाद।",
-    "noSignatureNote": "यह एक सिस्टम-जनित रसीद है और इसके लिए हस्ताक्षर आवश्यक नहीं है।"
+    "noSignatureNote": "यह एक सिस्टम-जनित रसीद है और इसके लिए हस्ताक्षर आवश्यक नहीं है।",
+    "gender": "लिंग",
+    "male": "पुरुष",
+    "female": "महिला",
+    "other": "अन्य"
   },
   "kn": {
     "label": "Kannada",
@@ -360,7 +368,11 @@
     "scanToVerify": "ಈ ರಶೀದಿಯನ್ನು ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸಲು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
     "verifyOnline": "ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸಿ",
     "thankYouNote": "ಹಿತಚಿಂತಕ ಅಭಿಯಾನಕ್ಕೆ ನಿಮ್ಮ ಉದಾರ ಕೊಡುಗೆಗಾಗಿ ಧನ್ಯವಾದಗಳು.",
-    "noSignatureNote": "ಇದು ವ್ಯವಸ್ಥೆ ರಚಿಸಿದ ರಶೀದಿಯಾಗಿದ್ದು, ಸಹಿಯ ಅಗತ್ಯವಿಲ್ಲ."
+    "noSignatureNote": "ಇದು ವ್ಯವಸ್ಥೆ ರಚಿಸಿದ ರಶೀದಿಯಾಗಿದ್ದು, ಸಹಿಯ ಅಗತ್ಯವಿಲ್ಲ.",
+    "gender": "ಲಿಂಗ",
+    "male": "ಪುರುಷ",
+    "female": "ಮಹಿಳೆ",
+    "other": "ಇತರೆ"
   },
   "gu": {
     "label": "Gujarati",
@@ -481,7 +493,11 @@
     "scanToVerify": "આ રસીદ ઓનલાઇન ચકાસવા માટે સ્કેન કરો",
     "verifyOnline": "ઓનલાઇન ચકાસો",
     "thankYouNote": "હિતચિંતક અભિયાનમાં તમારા ઉદાર યોગદાન બદલ આભાર.",
-    "noSignatureNote": "આ સિસ્ટમ-જનરેટેડ રસીદ છે અને તેને સહી કરવાની જરૂર નથી."
+    "noSignatureNote": "આ સિસ્ટમ-જનરેટેડ રસીદ છે અને તેને સહી કરવાની જરૂર નથી.",
+    "gender": "લિંગ",
+    "male": "પુરુષ",
+    "female": "સ્ત્રી",
+    "other": "અન્ય"
   },
   "te": {
     "label": "Telugu",
@@ -602,7 +618,11 @@
     "scanToVerify": "ఈ రసీదును ఆన్‌లైన్‌లో ధృవీకరించడానికి స్కాన్ చేయండి",
     "verifyOnline": "ఆన్‌లైన్‌లో ధృవీకరించండి",
     "thankYouNote": "హితచింతక్ అభియాన్‌కు మీ ఉదార విరాళానికి ధన్యవాదాలు.",
-    "noSignatureNote": "ఇది వ్యవస్థ రూపొందించిన రసీదు మరియు సంతకం అవసరం లేదు."
+    "noSignatureNote": "ఇది వ్యవస్థ రూపొందించిన రసీదు మరియు సంతకం అవసరం లేదు.",
+    "gender": "లింగం",
+    "male": "పురుషుడు",
+    "female": "స్త్రీ",
+    "other": "మరియు"
   },
   "ml": {
     "label": "Malayalam",
@@ -723,7 +743,11 @@
     "scanToVerify": "ഈ രസീത് ഓൺലൈനിൽ പരിശോധിക്കാൻ സ്കാൻ ചെയ്യുക",
     "verifyOnline": "ഓൺലൈനിൽ പരിശോധിക്കുക",
     "thankYouNote": "ഹിതചിന്തക് അഭിയാനിലേക്കുള്ള നിങ്ങളുടെ ഉദാരമായ സംഭാവനയ്ക്ക് നന്ദി.",
-    "noSignatureNote": "ഇത് സിസ്റ്റം ജനറേറ്റ് ചെയ്ത രസീതാണ്, ഒപ്പ് ആവശ്യമില്ല."
+    "noSignatureNote": "ഇത് സിസ്റ്റം ജനറേറ്റ് ചെയ്ത രസീതാണ്, ഒപ്പ് ആവശ്യമില്ല.",
+    "gender": "ലിംഗം",
+    "male": "പുരുഷൻ",
+    "female": "സ്ത്രീ",
+    "other": "മറ്റുള്ളവ"
   },
   "ta": {
     "label": "Tamil",
@@ -844,7 +868,11 @@
     "scanToVerify": "இந்த ரசீதை ஆன்லைனில் சரிபார்க்க ஸ்கேன் செய்யவும்",
     "verifyOnline": "ஆன்லைனில் சரிபார்க்கவும்",
     "thankYouNote": "ஹிதசிந்தக் அபியானுக்கான உங்கள் தாராள பங்களிப்புக்கு நன்றி.",
-    "noSignatureNote": "இது கணினி உருவாக்கிய ரசீது; கையொப்பம் தேவையில்லை."
+    "noSignatureNote": "இது கணினி உருவாக்கிய ரசீது; கையொப்பம் தேவையில்லை.",
+    "gender": "பாலினம்",
+    "male": "ஆண்",
+    "female": "பெண்",
+    "other": "மற்றவை"
   },
   "mr": {
     "label": "Marathi",
@@ -965,7 +993,11 @@
     "scanToVerify": "ही पावती ऑनलाइन सत्यापित करण्यासाठी स्कॅन करा",
     "verifyOnline": "ऑनलाइन सत्यापित करा",
     "thankYouNote": "हितचिंतक अभियानासाठी तुमच्या उदार योगदानाबद्दल धन्यवाद.",
-    "noSignatureNote": "ही प्रणाली-निर्मित पावती आहे आणि यासाठी स्वाक्षरीची आवश्यकता नाही."
+    "noSignatureNote": "ही प्रणाली-निर्मित पावती आहे आणि यासाठी स्वाक्षरीची आवश्यकता नाही.",
+    "gender": "लिंग",
+    "male": "पुरुष",
+    "female": "स्त्री",
+    "other": "इतर"
   },
   "or": {
     "label": "Odia",
@@ -1086,7 +1118,11 @@
     "scanToVerify": "ଏହି ରସିଦକୁ ଅନଲାଇନ୍‌ରେ ଯାଞ୍ଚ କରିବାକୁ ସ୍କାନ୍ କରନ୍ତୁ",
     "verifyOnline": "ଅନଲାଇନ୍‌ରେ ଯାଞ୍ଚ କରନ୍ତୁ",
     "thankYouNote": "ହିତଚିନ୍ତକ ଅଭିଯାନ ପାଇଁ ଆପଣଙ୍କର ଉଦାର ଅବଦାନ ପାଇଁ ଧନ୍ୟବାଦ।",
-    "noSignatureNote": "ଏହା ଏକ ସିଷ୍ଟମ-ଜନିତ ରସିଦ ଏବଂ ଏଥିପାଇଁ ହସ୍ତାକ୍ଷରର ଆବଶ୍ୟକତା ନାହିଁ।"
+    "noSignatureNote": "ଏହା ଏକ ସିଷ୍ଟମ-ଜନିତ ରସିଦ ଏବଂ ଏଥିପାଇଁ ହସ୍ତାକ୍ଷରର ଆବଶ୍ୟକତା ନାହିଁ।",
+    "gender": "ଲିଙ୍ଗ",
+    "male": "ପୁରୁଷ",
+    "female": "ମହିଳା",
+    "other": "ଅନ୍ୟ"
   },
   "bn": {
     "label": "Bengali",
@@ -1207,7 +1243,11 @@
     "scanToVerify": "এই রসিদটি অনলাইনে যাচাই করতে স্ক্যান করুন",
     "verifyOnline": "অনলাইনে যাচাই করুন",
     "thankYouNote": "হিতচিন্তক অভিযানে আপনার উদার অবদানের জন্য ধন্যবাদ।",
-    "noSignatureNote": "এটি একটি সিস্টেম-নির্মিত রসিদ এবং স্বাক্ষরের প্রয়োজন নেই।"
+    "noSignatureNote": "এটি একটি সিস্টেম-নির্মিত রসিদ এবং স্বাক্ষরের প্রয়োজন নেই।",
+    "gender": "লিঙ্গ",
+    "male": "পুরুষ",
+    "female": "মহিলা",
+    "other": "অন্যান্য"
   },
   "pa": {
     "label": "Punjabi",
@@ -1328,7 +1368,11 @@
     "scanToVerify": "ਇਸ ਰਸੀਦ ਨੂੰ ਆਨਲਾਈਨ ਪ੍ਰਮਾਣਿਤ ਕਰਨ ਲਈ ਸਕੈਨ ਕਰੋ",
     "verifyOnline": "ਆਨਲਾਈਨ ਪ੍ਰਮਾਣਿਤ ਕਰੋ",
     "thankYouNote": "ਹਿਤਚਿੰਤਕ ਅਭਿਆਨ ਲਈ ਤੁਹਾਡੇ ਉਦਾਰ ਯੋਗਦਾਨ ਲਈ ਧੰਨਵਾਦ।",
-    "noSignatureNote": "ਇਹ ਇੱਕ ਸਿਸਟਮ ਦੁਆਰਾ ਤਿਆਰ ਰਸੀਦ ਹੈ ਅਤੇ ਇਸ ਲਈ ਦਸਤਖਤ ਦੀ ਲੋੜ ਨਹੀਂ ਹੈ।"
+    "noSignatureNote": "ਇਹ ਇੱਕ ਸਿਸਟਮ ਦੁਆਰਾ ਤਿਆਰ ਰਸੀਦ ਹੈ ਅਤੇ ਇਸ ਲਈ ਦਸਤਖਤ ਦੀ ਲੋੜ ਨਹੀਂ ਹੈ।",
+    "gender": "ਲਿੰਗ",
+    "male": "ਮਰਦ",
+    "female": "ਔਰਤ",
+    "other": "ਹੋਰ"
   },
   "as": {
     "label": "Assamese",
@@ -1449,7 +1493,11 @@
     "scanToVerify": "এই ৰচিদখন অনলাইনত সত্যাপন কৰিবলৈ স্কেন কৰক",
     "verifyOnline": "অনলাইনত সত্যাপন কৰক",
     "thankYouNote": "হিতচিন্তক অভিযানলৈ আপোনাৰ উদাৰ অৱদানৰ বাবে ধন্যবাদ।",
-    "noSignatureNote": "এইটো ব্যৱস্থাপ্ৰণালীৰ দ্বাৰা সৃষ্ট ৰচিদ আৰু স্বাক্ষৰৰ প্ৰয়োজন নাই।"
+    "noSignatureNote": "এইটো ব্যৱস্থাপ্ৰণালীৰ দ্বাৰা সৃষ্ট ৰচিদ আৰু স্বাক্ষৰৰ প্ৰয়োজন নাই।",
+    "gender": "লিংগ",
+    "male": "পুৰুষ",
+    "female": "মহিলা",
+    "other": "অন্যান্য"
   },
   "mni": {
     "label": "Manipuri",
@@ -1570,6 +1618,10 @@
     "scanToVerify": "Scan to verify this receipt online",
     "verifyOnline": "Verify online",
     "thankYouNote": "Thank you for your generous contribution towards Hithachintak Abhiyan.",
-    "noSignatureNote": "This is a system-generated receipt and does not require a signature."
+    "noSignatureNote": "This is a system-generated receipt and does not require a signature.",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
   }
 }

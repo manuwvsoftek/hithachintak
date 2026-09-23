@@ -11,13 +11,15 @@ class EnrolmentFamilyMemberModel extends Model
     protected $table          = 'enrolment_family_members';
     protected $primaryKey     = 'id';
     protected $returnType     = 'array';
-    protected $allowedFields  = ['enrolment_id', 'name', 'first_name', 'last_name', 'age_or_dob', 'profession', 'contact_number'];
+    protected $allowedFields  = ['enrolment_id', 'name', 'first_name', 'last_name', 'age_or_dob', 'gender', 'profession', 'contact_number'];
 
     protected $validationRules = [
         'enrolment_id' => 'required|is_natural_no_zero',
         'name'         => 'required|max_length[150]',
         'first_name'   => 'required|max_length[100]',
         'age_or_dob'   => 'required|max_length[30]',
+        'gender'       => 'required|in_list[Male,Female,Other]',
+        'contact_number' =>  'required|max_length[100]',
     ];
 
     public function forEnrolment(int $enrolmentId): array

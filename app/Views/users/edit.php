@@ -165,6 +165,14 @@
       <div class="field"><label class="f-label">ID — Aadhar number (optional)</label><input class="f-input" name="aadhar_number" value="<?= esc($target->aadhar_number ?? '') ?>" maxlength="20" placeholder="12-digit Aadhar number"></div>
       <div class="field"><label class="f-label">Email ID (optional)</label><input class="f-input" type="email" name="email" value="<?= esc($target->email ?? '') ?>" placeholder="name@example.org"></div>
       <div class="field"><label class="f-label">Profession (optional)</label><input class="f-input" name="profession" value="<?= esc($target->profession ?? '') ?>" placeholder="Occupation"></div>
+        <div class="field" data-ayam-field hidden><label class="f-label">Ayam</label>
+        <select class="f-input" id="ayamSelect" name="ayam">
+          <option value="">— Ayam —</option>
+          <?php foreach ($ayams as $a): ?>
+            <option value="<?= esc($a) ?>" <?= $target->ayam ===  $a ? 'selected' : '' ?>><?= esc($a) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
     </div>
     <button type="submit" class="btn btn-primary btn-sm">Save changes</button>
   </form>

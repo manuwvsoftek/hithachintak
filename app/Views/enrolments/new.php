@@ -109,6 +109,14 @@
         <input class="f-input" id="ageOrDob" name="age_or_dob" value="<?= esc(old('age_or_dob') ?? '') ?>" placeholder="<?= esc($t['agePlaceholder']) ?>" required>
       </div>
       <div class="field">
+        <label class="f-label"><?= esc($t['gender']) ?> <span class="required-mark">*</span></label>
+        <select class="f-input" id="genderSelect" name="gender" required>
+          <option value="Male"><?= esc($t['male']) ?></option>
+          <option value="Female"><?= esc($t['female']) ?></option>
+          <option value="Other"><?= esc($t['other']) ?></option>
+        </select>
+      </div>
+      <div class="field">
         <label class="f-label"><?= esc($t['professionLabel']) ?></label>
         <select class="f-input" id="professionSelect">
           <option value="">— <?= esc($t['professionLabel']) ?> —</option>
@@ -188,7 +196,12 @@
   var RESUME_DRAFT_ID = <?= json_encode($resumeDraftId) ?>;
   var CSRF_NAME = <?= json_encode(csrf_token()) ?>;
   var FORCE_SELF = <?= json_encode($forceSelf) ?>;
-
+  var GENDER_OPTIONS = <?= json_encode([
+    'Male' => $t['male'],
+    'Female' => $t['female'],
+    'Other' => $t['other'],
+  ]) ?>;
+  var T_GENDER = <?= json_encode($t['gender']) ?>;
   // Hithachintak: ₹{rate} per person (head of family + each additional
   // member), capped at 9 additional members. Autopay: bounded between the
   // programme's own minimum and this hard monthly ceiling.
@@ -222,6 +235,7 @@
   var paymentModeChips = document.querySelectorAll('#paymentModeChips .chip');
   var cashModeChip = document.getElementById('cashModeChip');
   var paymentModeHelp = document.getElementById('paymentModeHelp');
+  var genderSelect = document.getElementById('genderSelect');
 
   // ---- Profession: preset dropdown, "Others" reveals a free-text field ----
   function wireProfession(selectEl, otherEl, hiddenEl){
@@ -440,12 +454,18 @@
         '<input class="f-input family-last-name" name="family_last_name[]"></div>' +
       '<div><label class="f-label-sm">' + T_AGE_PLACEHOLDER + ' <span class="required-mark">*</span></label>' +
         '<input class="f-input family-age" name="family_age[]" required></div>' +
+        '<div><label class="f-label-sm">' + T_GENDER + ' <span class="required-mark">*</span></label>' +
+        '<select class="f-input family-gender-select" name="family_gender[]">' +
+          Object.entries(GENDER_OPTIONS).map(function(e){
+            return '<option value="' + e[0] + '">' + e[1] + '</option>';
+          }).join('') +
+        '</select></div>' +
       '<div><label class="f-label-sm">' + T_PROFESSION + '</label>' +
         '<select class="f-input family-profession-select"><option value="">—</option>' + professionOptions + '</select>' +
         '<input class="f-input family-profession-other" style="display:none;margin-top:6px" placeholder="Please specify">' +
         '<input type="hidden" name="family_profession[]" class="family-profession-value"></div>' +
-      '<div><label class="f-label-sm">' + T_CONTACT_NUMBER + '</label>' +
-        '<input class="f-input family-contact" name="family_contact[]" inputmode="tel"></div>' +
+      '<div><label class="f-label-sm">' + T_CONTACT_NUMBER + ' <span class="required-mark">*</span></label>' +
+        '<input class="f-input family-contact" name="family_contact[]" inputmode="tel" required></div>' +
       '</div>' +
       '<button type="button" class="btn btn-ghost btn-sm remove-family" style="position:absolute;top:6px;right:6px;color:var(--red-600)">✕</button>';
 
@@ -564,8 +584,10 @@
     document.querySelectorAll('.family-row').forEach(function(row, idx){
       var fn = row.querySelector('.family-first-name');
       var age = row.querySelector('.family-age');
+      var contact = row.querySelector('.family-contact');
       fn.classList.remove('field-invalid');
       age.classList.remove('field-invalid');
+      contact.classList.remove('field-invalid');
       if (!fn.value.trim()) {
         errors.push('Family member ' + (idx + 1) + ': ' + T_FIRST_NAME + ' is required.');
         fn.classList.add('field-invalid');
@@ -575,6 +597,11 @@
         errors.push('Family member ' + (idx + 1) + ': ' + T_AGE_PLACEHOLDER + ' is required.');
         age.classList.add('field-invalid');
         if (!firstBad) { firstBad = age; }
+      }
+      if (!contact.value.trim()) {
+        errors.push('Family member ' + (idx + 1) + ': ' + T_CONTACT_NUMBER + ' is required.');
+        contact.classList.add('field-invalid');
+        if (!firstBad) { firstBad = contact; }
       }
     });
 
