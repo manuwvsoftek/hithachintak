@@ -98,6 +98,7 @@
     var jilaAll        = form.querySelector('[data-jila-all]');
     var prakhandAll    = form.querySelector('[data-prakhand-all]');
     var ayamField      = form.querySelector('[data-ayam-field]');
+    var karyakartaFields = form.querySelectorAll('[data-karyakarta-field]');
     var ayamSelect     = form.querySelector('#ayamSelect');
     function fillSelect(sel, items) {
       if (!sel) return;
@@ -236,14 +237,29 @@
         ayamSelect.value = '';
     }
   }
+
+  function applyKaryakartaFields() {
+    if (!roleSelect) return;
+
+    var isKaryakarta = roleSelect.value === 'karyakarta';
+
+    karyakartaFields.forEach(function (field) {
+        field.hidden = !isKaryakarta;
+
+        field.querySelectorAll('input, select, textarea').forEach(function (el) {
+            el.disabled = !isKaryakarta;
+            el.required = isKaryakarta;
+        });
+    });
+}
     if (roleSelect) {
     roleSelect.addEventListener('change', function () {
         applyDepth();
-        applyAyamVisibility();
+        applyKaryakartaFields();
     });
 
     applyDepth();
-    applyAyamVisibility();
+    applyKaryakartaFields();
 }
     // ---- Client-side validation: instant feedback instead of a server
     // round-trip that (before this) threw away everything typed. Generic

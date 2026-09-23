@@ -19,7 +19,7 @@ class UserModel extends Model
     protected $allowedFields = [
         'name', 'phone', 'password_hash', 'password_plain', 'role',
         'prant_id', 'jila_id', 'prakhand_id', 'scope_all',
-        'address', 'aadhar_number', 'email', 'profession', 'ayam',
+        'address', 'aadhar_number', 'email', 'profession', 'ayam', 'dob',
         'status', 'must_reset_password',
         'last_login_at', 'created_by',
     ];

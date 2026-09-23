@@ -286,7 +286,8 @@ class UsersController extends BaseController
             'aadhar_number'       => $this->request->getPost('aadhar_number') ?: null,
             'email'               => $this->request->getPost('email') ?: null,
             'profession'          => $this->request->getPost('profession') ?: null,
-            'ayam'          => $this->request->getPost('ayam') ?: null,
+            'ayam'                => $this->request->getPost('ayam') ?: null,
+            'dob'                 => $this->request->getPost('dob') ?: null,
             'status'              => 'active',
             'must_reset_password' => $adminPassword === '',
             'created_by'          => $actor->id,
@@ -388,7 +389,8 @@ class UsersController extends BaseController
             'aadhar_number' => $this->request->getPost('aadhar_number') ?: null,
             'email'         => $this->request->getPost('email') ?: null,
             'profession'    => $this->request->getPost('profession') ?: null,
-            'ayam'          =>  $this->request->getPost('ayam') ?: null,
+            'ayam'          => $this->request->getPost('ayam') ?: null,
+            'dob'           => $this->request->getPost('dob') ?: null,
         ]);
 
         if (! $updated) {

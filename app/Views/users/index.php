@@ -175,14 +175,11 @@
       <?php else: ?>
         <div class="field"><label class="f-label">Location</label><input class="f-input" value="Your Prant, Jila &amp; Prakhand (assigned automatically)" disabled></div>
       <?php endif; ?>
-
-      <div class="field"><label class="f-label">Password (optional)</label><input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically"></div>
-      <div class="field"><label class="f-label">Address (optional)</label><input class="f-input" name="address" placeholder="Address"></div>
-      <div class="field"><label class="f-label">ID — Aadhar number (optional)</label><input class="f-input" name="aadhar_number" maxlength="20" placeholder="12-digit Aadhar number"></div>
-      <div class="field"><label class="f-label">Email ID (optional)</label><input class="f-input" type="email" name="email" placeholder="name@example.org"></div>
-      <div class="field"><label class="f-label">Profession (optional)</label><input class="f-input" name="profession" placeholder="Occupation"></div>
-      <?php //if ($actor->role === 'karyakarta'): ?>
-      <div class="field" data-ayam-field hidden><label class="f-label">Ayam</label>
+      <div class="field" data-karyakarta-field hidden>
+        <label class="f-label">DOB</label>
+        <input type="date" class="f-input" id="dob" name="dob" disabled>
+      </div>
+      <div class="field" data-karyakarta-field hidden><label class="f-label">Ayam</label>
         <select class="f-input" id="ayamSelect" name="ayam">
           <option value="">— Ayam —</option>
           <?php foreach ($ayams as $a): ?>
@@ -190,7 +187,11 @@
           <?php endforeach; ?>
         </select>
       </div>
-      <?php //endif; ?>
+      <div class="field"><label class="f-label">Password (optional)</label><input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically"></div>
+      <div class="field"><label class="f-label">Address (optional)</label><input class="f-input" name="address" placeholder="Address"></div>
+      <div class="field"><label class="f-label">ID — Aadhar number (optional)</label><input class="f-input" name="aadhar_number" maxlength="20" placeholder="12-digit Aadhar number"></div>
+      <div class="field"><label class="f-label">Email ID (optional)</label><input class="f-input" type="email" name="email" placeholder="name@example.org"></div>
+      <div class="field"><label class="f-label">Profession (optional)</label><input class="f-input" name="profession" placeholder="Occupation"></div>
     </div>
     <p class="panel-note" style="margin-bottom:10px">Whatever password is set here (typed or generated) can be viewed again later from this account's "Password" action.</p>
     <button type="submit" class="btn btn-primary btn-sm">Create Account</button>
