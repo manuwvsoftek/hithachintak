@@ -299,6 +299,17 @@
         markInvalid(passwordInput, 'Password must be at least 6 characters.');
       }
 
+       if (roleSelect && roleSelect.value === 'karyakarta') {
+        var dobInput = form.querySelector('#dob');
+        var ayamSelectEl = form.querySelector('#ayamSelect');
+        if (dobInput && !dobInput.value) {
+          markInvalid(dobInput, 'Date of birth is required for a Karyakarta.');
+        }
+        if (ayamSelectEl && !ayamSelectEl.value) {
+          markInvalid(ayamSelectEl, 'Ayam is required for a Karyakarta.');
+        }
+      }
+
       form.querySelectorAll('[data-loc-level]').forEach(function (field) {
         if (field.hidden) return;
         var labelEl = field.querySelector('.f-label');
@@ -476,7 +487,7 @@
         draftIdInput.value = state.draft_id || form.dataset.resumeDraftId || '';
         setField('name', state.name);
         setField('phone', state.phone);
-        if (state.role && roleSelect) { roleSelect.value = state.role; applyDepth(); }
+        if (state.role && roleSelect) { roleSelect.value = state.role; applyDepth(); applyKaryakartaFields();}
 
         function finish() {
           if (prakhandSelect && state.prakhand_id) { prakhandSelect.value = state.prakhand_id; }

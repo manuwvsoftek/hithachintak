@@ -29,6 +29,7 @@ class UserModel extends Model
         'phone' => 'required|regex_match[/^[6-9][0-9]{9}$/]|is_unique[users.phone,id,{id}]',
         'role'  => 'required|in_list[dev_admin,super_admin,pranta_admin,sub_admin,prakhand_admin,karyakarta]',
         'email' => 'permit_empty|valid_email',
+         'dob'   => 'permit_empty|valid_date[Y-m-d]',
     ];
 
     protected $validationMessages = [

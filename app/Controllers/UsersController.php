@@ -237,12 +237,16 @@ class UsersController extends BaseController
     {
         $actor           = $this->currentUser();
         $manageableRoles = $this->manageableRoles($actor);
-
+        $role            = (string) $this->request->getPost('role');
         $rules = [
             'name'  => 'required|min_length[2]|max_length[150]',
             'phone' => 'required|regex_match[/^[6-9][0-9]{9}$/]|is_unique[users.phone]',
             'role'  => 'required|in_list[' . implode(',', $manageableRoles) . ']',
         ];
+         if ($role === User::ROLE_KARYAKARTA) {
+            $rules['dob']  = 'required|valid_date[Y-m-d]';
+            $rules['ayam'] = 'required|in_list[' . implode(',', self::AYAMS) . ']';
+        }
         if (! $this->validate($rules)) {
             // withInput() so old('draft_id') survives this redirect — the
             // New User form's autosave then resumes from localStorage
@@ -286,8 +290,8 @@ class UsersController extends BaseController
             'aadhar_number'       => $this->request->getPost('aadhar_number') ?: null,
             'email'               => $this->request->getPost('email') ?: null,
             'profession'          => $this->request->getPost('profession') ?: null,
-            'ayam'                => $this->request->getPost('ayam') ?: null,
-            'dob'                 => $this->request->getPost('dob') ?: null,
+            'dob'                 => $role === User::ROLE_KARYAKARTA ? ($this->request->getPost('dob') ?: null) : null,
+            'ayam'                => $role === User::ROLE_KARYAKARTA ? ($this->request->getPost('ayam') ?: null) : null,
             'status'              => 'active',
             'must_reset_password' => $adminPassword === '',
             'created_by'          => $actor->id,
@@ -359,6 +363,10 @@ class UsersController extends BaseController
             'phone' => "required|regex_match[/^[6-9][0-9]{9}\$/]|is_unique[users.phone,id,{$id}]",
             'role'  => 'required|in_list[' . implode(',', $manageableRoles) . ']',
         ];
+        if ($role === User::ROLE_KARYAKARTA) {
+            $rules['dob']  = 'required|valid_date[Y-m-d]';
+            $rules['ayam'] = 'required|in_list[' . implode(',', UserModel::AYAMS) . ']';
+        }
         if (! $this->validate($rules)) {
             return redirect()->to('/admin/users/' . $id . '/edit')->with('errors', $this->validator->getErrors());
         }
@@ -389,8 +397,8 @@ class UsersController extends BaseController
             'aadhar_number' => $this->request->getPost('aadhar_number') ?: null,
             'email'         => $this->request->getPost('email') ?: null,
             'profession'    => $this->request->getPost('profession') ?: null,
-            'ayam'          => $this->request->getPost('ayam') ?: null,
-            'dob'           => $this->request->getPost('dob') ?: null,
+            'dob'           => $role === User::ROLE_KARYAKARTA ? ($this->request->getPost('dob') ?: null) : null,
+            'ayam'          => $role === User::ROLE_KARYAKARTA ? ($this->request->getPost('ayam') ?: null) : null,
         ]);
 
         if (! $updated) {
