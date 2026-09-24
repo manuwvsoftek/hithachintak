@@ -148,8 +148,8 @@
         <textarea class="f-input" id="addressInput" name="address" rows="2" placeholder="<?= esc($t['address'] ?? 'Address') ?>" required><?= esc(old('address') ?? '') ?></textarea>
       </div>
       <div class="field">
-        <label class="f-label"><?= esc($t['pincode']) ?> <span class="required-mark">*</span></label>
-        <input class="f-input" id="pincodeInput" name="pincode" value="<?= esc(old('pincode') ?? '') ?>" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="<?= esc($t['pincodeHelp']) ?>" required>
+        <label class="f-label"><?= esc($t['pincode']) ?></label>
+        <input class="f-input" id="pincodeInput" name="pincode" value="<?= esc(old('pincode') ?? '') ?>" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="<?= esc($t['pincodeHelp']) ?>">
       </div>
     </div>
 
@@ -560,7 +560,7 @@
     markRequired(memberFirstName, T_FIRST_NAME);
     markRequired(ageOrDob, T_AGE_PLACEHOLDER);
     markRequired(addressInput, 'Address');
-    markRequired(pincodeInput, 'PIN code');
+    //markRequired(pincodeInput, 'PIN code');
 
     if (markRequired(memberPhone, 'Mobile number')) {
       var digits = memberPhone.value.replace(/\D/g, '');
