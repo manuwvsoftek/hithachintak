@@ -40,7 +40,7 @@
         <?php foreach ($householdRows as $i => $row): ?>
           <tr>
             <td class="num"><?= $i + 1 ?></td>
-            <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?><span class="head-tag">(<?= esc($t['headOfFamily']) ?>)</span><?php endif; ?></td>
+            <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?><span class="head-tag"><?php //esc($t['headOfFamily']) ?></span><?php endif; ?></td>
             <td><?= esc($row['age_or_dob'] ?: '—') ?></td>
             <td><?= esc($row['profession'] ?: '—') ?></td>
           </tr>
@@ -52,7 +52,7 @@
       <span class="lbl" style="font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase"><?= esc($t['amountShort']) ?></span>
       <span class="val"><?= fmt_rupees($enrolment->amount) ?></span>
     </div>
-    <div class="receipt-pan-note"><?= esc($t['panNote']) ?></div>
+    <div class="receipt-pan-note"><?php //esc($t['panNote']) ?></div>
     <div class="receipt-footer-note"><?= esc($t['thankYouNote']) ?><br><?= esc($t['noSignatureNote']) ?></div>
   </div>
   <div class="receipt-actions" style="padding:0 18px 18px">

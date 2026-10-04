@@ -22,7 +22,7 @@
       <?php foreach ($householdRows as $i => $row): ?>
         <tr>
           <td style="padding:6px 4px;border-bottom:1px solid #F2EEE4"><?= $i + 1 ?></td>
-          <td style="padding:6px 4px;border-bottom:1px solid #F2EEE4"><?= esc($row['name']) ?><?php if ($row['isHead']): ?> <span style="font-size:9px;color:#8B93A3"><?= esc($t['headOfFamily']) ?></span><?php endif; ?></td>
+          <td style="padding:6px 4px;border-bottom:1px solid #F2EEE4"><?= esc($row['name']) ?><?php if ($row['isHead']): ?> <span style="font-size:9px;color:#8B93A3"><?php //esc($t['headOfFamily']) ?></span><?php endif; ?></td>
           <td style="padding:6px 4px;border-bottom:1px solid #F2EEE4"><?= esc($row['age_or_dob'] ?: '—') ?></td>
           <td style="padding:6px 4px;border-bottom:1px solid #F2EEE4"><?= esc($row['profession'] ?: '—') ?></td>
         </tr>

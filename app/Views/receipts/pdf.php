@@ -69,7 +69,7 @@
     <?php foreach ($householdRows as $i => $row): ?>
       <tr>
         <td class="num"><?= $i + 1 ?></td>
-        <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?> <span class="head-tag">(<?= esc($t['headOfFamily']) ?>)</span><?php endif; ?></td>
+        <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?> <span class="head-tag"><?php //esc($t['headOfFamily']) ?></span><?php endif; ?></td>
         <td><?= esc($row['age_or_dob'] ?: '—') ?></td>
         <td><?= esc($row['profession'] ?: '—') ?></td>
       </tr>
@@ -84,7 +84,7 @@
       </tr>
     </table>
   </div>
-  <div class="pan-note"><?= esc($t['panNote']) ?></div>
+  <div class="pan-note"><?php //esc($t['panNote']) ?></div>
   <div class="footer-note"><?= esc($t['thankYouNote']) ?><br><?= esc($t['noSignatureNote']) ?></div>
 </div>
 
