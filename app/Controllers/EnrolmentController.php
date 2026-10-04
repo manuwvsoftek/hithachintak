@@ -396,7 +396,7 @@ class EnrolmentController extends BaseController
             'age_or_dob'        => 'required|max_length[30]',
             'address'           => 'required|max_length[255]',
            // 'pincode'           => 'required|regex_match[/^[0-9]{6}$/]',
-            'email'             => 'permit_empty|valid_email',
+            'email'             => 'required|valid_email',
             'amount'            => 'permit_empty|numeric',
             'gender'            => 'required',
         ];

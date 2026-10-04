@@ -43,6 +43,7 @@
     "phoneNumber": "Phone number",
     "phoneHelp": "For OTP verification",
     "emailOptional": "Email (optional)",
+     "email": "Email",
     "emailHelp": "For email receipt",
     "panRequiredNote": "Required for Autopay Monthly Donation (used on the donation receipt).",
     "pincode": "PIN code",
@@ -66,7 +67,7 @@
     "perMonthAutopay": "per month — auto-debited via Cashfree Autopay.",
     "verifyMemberTitle": "Verify Member",
     "backWord": "Back",
-    "otpSentNote": "An OTP has been sent by SMS to the member's registered number. The enrolment is recorded only once this is verified.",
+    "otpSentNote": "An OTP has been sent by SMS and email to the member's registered number. The enrolment is recorded only once this is verified.",
     "resendOtp": "Resend OTP",
     "continueWord": "Continue",
     "paymentTitle": "Payment",
@@ -122,7 +123,10 @@
     "gender": "Gender",
     "male": "Male",
     "female": "Female",
-    "other": "Other"
+    "other": "Other",
+        "otpEmailSubject": "Your Hithachintak Abhiyan verification code",
+    "otpEmailIntro": "Use the code below to verify your Hithachintak Abhiyan enrolment.",
+    "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone."
   },
   "hi": {
     "label": "Hindi",
@@ -168,6 +172,7 @@
     "phoneNumber": "फ़ोन नंबर",
     "phoneHelp": "ओटीपी सत्यापन के लिए",
     "emailOptional": "ईमेल (वैकल्पिक)",
+     "email": "ईमेल",
     "emailHelp": "ईमेल रसीद के लिए",
     "panRequiredNote": "ऑटोपे मासिक दान के लिए आवश्यक (दान रसीद पर उपयोग किया जाता है)।",
     "pincode": "पिन कोड",
@@ -247,7 +252,10 @@
     "gender": "लिंग",
     "male": "पुरुष",
     "female": "महिला",
-    "other": "अन्य"
+    "other": "अन्य",
+     "otpEmailSubject": "आपका हिताचिंतक अभियान सत्यापन कोड",
+    "otpEmailIntro": "अपना हिताचिंतक अभियान नामांकन सत्यापित करने के लिए नीचे दिया गया कोड उपयोग करें।",
+    "otpEmailValidity": "यह कोड 5 मिनट के लिए वैध है। इसे किसी के साथ साझा न करें।"
   },
   "kn": {
     "label": "Kannada",
@@ -293,6 +301,7 @@
     "phoneNumber": "ಫೋನ್ ಸಂಖ್ಯೆ",
     "phoneHelp": "OTP ಪರಿಶೀಲನೆಗಾಗಿ",
     "emailOptional": "ಇಮೇಲ್ (ಐಚ್ಛಿಕ)",
+    "email": "ಇಮೇಲ್",
     "emailHelp": "ಇಮೇಲ್ ರಶೀದಿಗಾಗಿ",
     "panRequiredNote": "ಆಟೋಪೇ ಮಾಸಿಕ ದೇಣಿಗೆಗೆ ಅಗತ್ಯ (ದೇಣಿಗೆ ರಶೀದಿಯಲ್ಲಿ ಬಳಸಲಾಗುತ್ತದೆ).",
     "pincode": "ಪಿನ್ ಕೋಡ್",
@@ -316,7 +325,7 @@
     "perMonthAutopay": "ಪ್ರತಿ ತಿಂಗಳು — ಕ್ಯಾಶ್‌ಫ್ರೀ ಆಟೋಪೇ ಮೂಲಕ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಡಿತ.",
     "verifyMemberTitle": "ಸದಸ್ಯರನ್ನು ಪರಿಶೀಲಿಸಿ",
     "backWord": "ಹಿಂದೆ",
-    "otpSentNote": "ಸದಸ್ಯರ ನೋಂದಾಯಿತ ಸಂಖ್ಯೆಗೆ SMS ಮೂಲಕ OTP ಕಳುಹಿಸಲಾಗಿದೆ. ಪರಿಶೀಲಿಸಿದ ನಂತರವೇ ನೋಂದಣಿ ದಾಖಲಾಗುತ್ತದೆ.",
+    "otpSentNote": "ಸದಸ್ಯರ ನೋಂದಾಯಿತ ಸಂಖ್ಯೆಗೆ SMS and Email ಮೂಲಕ OTP ಕಳುಹಿಸಲಾಗಿದೆ. ಪರಿಶೀಲಿಸಿದ ನಂತರವೇ ನೋಂದಣಿ ದಾಖಲಾಗುತ್ತದೆ.",
     "resendOtp": "OTP ಮರುಕಳುಹಿಸಿ",
     "continueWord": "ಮುಂದುವರಿಸಿ",
     "paymentTitle": "ಪಾವತಿ",
@@ -372,7 +381,10 @@
     "gender": "ಲಿಂಗ",
     "male": "ಪುರುಷ",
     "female": "ಮಹಿಳೆ",
-    "other": "ಇತರೆ"
+    "other": "ಇತರೆ",
+    "otpEmailSubject": "ನಿಮ್ಮ ಹಿತಚಿಂತಕ ಅಭಿಯಾನ ಪರಿಶೀಲನಾ ಕೋಡ್",
+    "otpEmailIntro": "ನಿಮ್ಮ ಹಿತಚಿಂತಕ ಅಭಿಯಾನ ನೋಂದಣಿಯನ್ನು ಪರಿಶೀಲಿಸಲು ಕೆಳಗಿನ ಕೋಡ್ ಬಳಸಿ.",
+    "otpEmailValidity": "ಈ ಕೋಡ್ 5 ನಿಮಿಷಗಳ ಕಾಲ ಮಾತ್ರ ಮಾನ್ಯವಾಗಿರುತ್ತದೆ. ಇದನ್ನು ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಬೇಡಿ."
   },
   "gu": {
     "label": "Gujarati",
@@ -418,6 +430,7 @@
     "phoneNumber": "ફોન નંબર",
     "phoneHelp": "OTP ચકાસણી માટે",
     "emailOptional": "ઇમેઇલ (વૈકલ્પિક)",
+    "email": "ઈમેલ",
     "emailHelp": "ઇમેઇલ રસીદ માટે",
     "panRequiredNote": "ઓટોપે માસિક દાન માટે જરૂરી (દાન રસીદ પર વપરાય છે).",
     "pincode": "પિન કોડ",
@@ -497,7 +510,10 @@
     "gender": "લિંગ",
     "male": "પુરુષ",
     "female": "સ્ત્રી",
-    "other": "અન્ય"
+    "other": "અન્ય",
+    "otpEmailSubject": "તમારો હિતચિંતક અભિયાન ચકાસણી કોડ",
+    "otpEmailIntro": "તમારી હિતચિંતક અભિયાન નોંધણી ચકાસવા માટે નીચેનો કોડ વાપરો.",
+    "otpEmailValidity": "આ કોડ 5 મિનિટ માટે માન્ય છે. તેને કોઈની સાથે શેર ન કરો."
   },
   "te": {
     "label": "Telugu",
@@ -543,7 +559,8 @@
     "phoneNumber": "ఫోన్ నంబర్",
     "phoneHelp": "OTP ధృవీకరణ కోసం",
     "emailOptional": "ఇమెయిల్ (ఐచ్ఛికం)",
-    "emailHelp": "ఇమెయిల్ రసీదు కోసం",
+    "email": "ఈమెయిల్",
+    "emailHelp": "ఈమెయిల్ రసీదు కోసం",
     "panRequiredNote": "ఆటోపే నెలవారీ విరాళం కోసం అవసరం (విరాళం రసీదులో ఉపయోగించబడుతుంది).",
     "pincode": "పిన్ కోడ్",
     "pincodeHelp": "6-అంకెల పిన్ కోడ్",
@@ -622,7 +639,10 @@
     "gender": "లింగం",
     "male": "పురుషుడు",
     "female": "స్త్రీ",
-    "other": "మరియు"
+    "other": "మరియు",
+    "otpEmailSubject": "మీ హితచింతక్ అభియాన్ ధృవీకరణ కోడ్",
+    "otpEmailIntro": "మీ హితచింతక్ అభియాన్ నమోదును ధృవీకరించడానికి దిగువ కోడ్‌ను ఉపయోగించండి.",
+    "otpEmailValidity": "ఈ కోడ్ 5 నిమిషాల పాటు మాత్రమే చెల్లుతుంది. దీన్ని ఎవరితోనూ షేర్ చేయకండి."
   },
   "ml": {
     "label": "Malayalam",
@@ -668,6 +688,7 @@
     "phoneNumber": "ഫോൺ നമ്പർ",
     "phoneHelp": "OTP പരിശോധനയ്ക്കായി",
     "emailOptional": "ഇമെയിൽ (ഓപ്ഷണൽ)",
+        "email": "ഇമെയിൽ",
     "emailHelp": "ഇമെയിൽ രസീതിന്",
     "panRequiredNote": "ഓട്ടോപേ പ്രതിമാസ സംഭാവനയ്ക്ക് ആവശ്യമാണ് (സംഭാവന രസീതിൽ ഉപയോഗിക്കുന്നു).",
     "pincode": "പിൻ കോഡ്",
@@ -747,7 +768,10 @@
     "gender": "ലിംഗം",
     "male": "പുരുഷൻ",
     "female": "സ്ത്രീ",
-    "other": "മറ്റുള്ളവ"
+    "other": "മറ്റുള്ളവ",
+    "otpEmailSubject": "നിങ്ങളുടെ ഹിതചിന്തക് അഭിയാൻ സ്ഥിരീകരണ കോഡ്",
+    "otpEmailIntro": "നിങ്ങളുടെ ഹിതചിന്തക് അഭിയാൻ എൻറോൾമെന്റ് സ്ഥിരീകരിക്കാൻ താഴെയുള്ള കോഡ് ഉപയോഗിക്കുക.",
+    "otpEmailValidity": "ഈ കോഡ് 5 മിനിറ്റ് മാത്രം സാധുവാണ്. ഇത് ആരുമായും പങ്കിടരുത്."
   },
   "ta": {
     "label": "Tamil",
@@ -793,6 +817,7 @@
     "phoneNumber": "தொலைபேசி எண்",
     "phoneHelp": "OTP சரிபார்ப்பிற்காக",
     "emailOptional": "மின்னஞ்சல் (விருப்பத்திற்குரியது)",
+    "email": "மின்னஞ்சல்",
     "emailHelp": "மின்னஞ்சல் ரசீதுக்காக",
     "panRequiredNote": "ஆட்டோபே மாதாந்திர நன்கொடைக்கு தேவை (நன்கொடை ரசீதில் பயன்படுத்தப்படும்).",
     "pincode": "பின் குறியீடு",
@@ -872,7 +897,10 @@
     "gender": "பாலினம்",
     "male": "ஆண்",
     "female": "பெண்",
-    "other": "மற்றவை"
+    "other": "மற்றவை",
+    "otpEmailSubject": "உங்கள் ஹிதசிந்தக் அபியான் சரிபார்ப்பு குறியீடு",
+    "otpEmailIntro": "உங்கள் ஹிதசிந்தக் அபியான் பதிவை சரிபார்க்க கீழே உள்ள குறியீட்டைப் பயன்படுத்தவும்.",
+    "otpEmailValidity": "இந்த குறியீடு 5 நிமிடங்களுக்கு மட்டும் செல்லுபடியாகும். இதை யாருடனும் பகிர வேண்டாம்."
   },
   "mr": {
     "label": "Marathi",
@@ -918,6 +946,7 @@
     "phoneNumber": "फोन नंबर",
     "phoneHelp": "OTP पडताळणीसाठी",
     "emailOptional": "ईमेल (ऐच्छिक)",
+     "email": "ईमेल",
     "emailHelp": "ईमेल पावतीसाठी",
     "panRequiredNote": "ऑटोपे मासिक देणगीसाठी आवश्यक (देणगी पावतीवर वापरले जाते).",
     "pincode": "पिन कोड",
@@ -997,7 +1026,10 @@
     "gender": "लिंग",
     "male": "पुरुष",
     "female": "स्त्री",
-    "other": "इतर"
+    "other": "इतर",
+    "otpEmailSubject": "तुमचा हितचिंतक अभियान पडताळणी कोड",
+    "otpEmailIntro": "तुमची हितचिंतक अभियान नोंदणी पडताळण्यासाठी खालील कोड वापरा.",
+    "otpEmailValidity": "हा कोड 5 मिनिटांसाठी वैध आहे. तो कोणाशीही सामायिक करू नका."
   },
   "or": {
     "label": "Odia",
@@ -1043,6 +1075,7 @@
     "phoneNumber": "ଫୋନ ନମ୍ବର",
     "phoneHelp": "OTP ଯାଞ୍ଚ ପାଇଁ",
     "emailOptional": "ଇମେଲ (ଇଚ୍ଛାଧୀନ)",
+    "email": "ଇମେଲ",
     "emailHelp": "ଇମେଲ ରସିଦ ପାଇଁ",
     "panRequiredNote": "ଅଟୋପେ ମାସିକ ଦାନ ପାଇଁ ଆବଶ୍ୟକ (ଦାନ ରସିଦରେ ବ୍ୟବହୃତ)।",
     "pincode": "ପିନ୍ କୋଡ୍",
@@ -1122,7 +1155,10 @@
     "gender": "ଲିଙ୍ଗ",
     "male": "ପୁରୁଷ",
     "female": "ମହିଳା",
-    "other": "ଅନ୍ୟ"
+    "other": "ଅନ୍ୟ",
+    "otpEmailSubject": "ଆପଣଙ୍କ ହିତଚିନ୍ତକ ଅଭିଯାନ ଯାଞ୍ଚ କୋଡ୍",
+    "otpEmailIntro": "ଆପଣଙ୍କ ହିତଚିନ୍ତକ ଅଭିଯାନ ପଞ୍ଜୀକରଣ ଯାଞ୍ଚ କରିବା ପାଇଁ ତଳେ ଥିବା କୋଡ୍ ବ୍ୟବହାର କରନ୍ତୁ।",
+    "otpEmailValidity": "ଏହି କୋଡ୍ 5 ମିନିଟ୍ ପାଇଁ ବୈଧ। ଏହାକୁ କାହା ସହିତ ବାଣ୍ଟନ୍ତୁ ନାହିଁ।"
   },
   "bn": {
     "label": "Bengali",
@@ -1168,6 +1204,7 @@
     "phoneNumber": "ফোন নম্বর",
     "phoneHelp": "OTP যাচাইয়ের জন্য",
     "emailOptional": "ইমেল (ঐচ্ছিক)",
+    "email": "ইমেল",
     "emailHelp": "ইমেল রসিদের জন্য",
     "panRequiredNote": "অটোপে মাসিক অনুদানের জন্য প্রয়োজনীয় (অনুদানের রসিদে ব্যবহৃত হয়)।",
     "pincode": "পিন কোড",
@@ -1247,7 +1284,10 @@
     "gender": "লিঙ্গ",
     "male": "পুরুষ",
     "female": "মহিলা",
-    "other": "অন্যান্য"
+    "other": "অন্যান্য",
+    "otpEmailSubject": "আপনার হিতচিন্তক অভিযান যাচাইকরণ কোড",
+    "otpEmailIntro": "আপনার হিতচিন্তক অভিযান নিবন্ধন যাচাই করতে নিচের কোডটি ব্যবহার করুন।",
+    "otpEmailValidity": "এই কোডটি ৫ মিনিটের জন্য বৈধ। এটি কারো সাথে শেয়ার করবেন না।"
   },
   "pa": {
     "label": "Punjabi",
@@ -1293,6 +1333,7 @@
     "phoneNumber": "ਫੋਨ ਨੰਬਰ",
     "phoneHelp": "OTP ਤਸਦੀਕ ਲਈ",
     "emailOptional": "ਈਮੇਲ (ਚੋਣਵਾਂ)",
+    "email": "ਈਮੇਲ",
     "emailHelp": "ਈਮੇਲ ਰਸੀਦ ਲਈ",
     "panRequiredNote": "ਆਟੋਪੇ ਮਾਸਿਕ ਦਾਨ ਲਈ ਲੋੜੀਂਦਾ (ਦਾਨ ਰਸੀਦ 'ਤੇ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ)।",
     "pincode": "ਪਿੰਨ ਕੋਡ",
@@ -1372,7 +1413,10 @@
     "gender": "ਲਿੰਗ",
     "male": "ਮਰਦ",
     "female": "ਔਰਤ",
-    "other": "ਹੋਰ"
+    "other": "ਹੋਰ",
+    "otpEmailSubject": "ਤੁਹਾਡਾ ਹਿਤਚਿੰਤਕ ਅਭਿਆਨ ਤਸਦੀਕ ਕੋਡ",
+    "otpEmailIntro": "ਆਪਣੀ ਹਿਤਚਿੰਤਕ ਅਭਿਆਨ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਦੀ ਤਸਦੀਕ ਕਰਨ ਲਈ ਹੇਠਾਂ ਦਿੱਤਾ ਕੋਡ ਵਰਤੋ।",
+    "otpEmailValidity": "ਇਹ ਕੋਡ 5 ਮਿੰਟਾਂ ਲਈ ਵੈਧ ਹੈ। ਇਸਨੂੰ ਕਿਸੇ ਨਾਲ ਵੀ ਸਾਂਝਾ ਨਾ ਕਰੋ।"
   },
   "as": {
     "label": "Assamese",
@@ -1418,6 +1462,7 @@
     "phoneNumber": "ফোন নম্বৰ",
     "phoneHelp": "OTP সত্যাপনৰ বাবে",
     "emailOptional": "ইমেইল (ঐচ্ছিক)",
+    "email": "ইমেইল",
     "emailHelp": "ইমেইল ৰচীদৰ বাবে",
     "panRequiredNote": "অটোপে মাহিলী দানৰ বাবে প্ৰয়োজনীয় (দান ৰচীদত ব্যৱহৃত হয়)।",
     "pincode": "পিন কোড",
@@ -1497,7 +1542,10 @@
     "gender": "লিংগ",
     "male": "পুৰুষ",
     "female": "মহিলা",
-    "other": "অন্যান্য"
+    "other": "অন্যান্য",
+    "otpEmailSubject": "আপোনাৰ হিতচিন্তক অভিযান সত্যাপন কোড",
+    "otpEmailIntro": "আপোনাৰ হিতচিন্তক অভিযান পঞ্জীয়ন সত্যাপন কৰিবলে তলৰ কোডটো ব্যবহাৰ কৰক।",
+    "otpEmailValidity": "এই কোডটো ৫ মিনিটৰ বাবে বৈধ। ইয়াক কাৰো সৈতে শ্বেয়াৰ নকৰিব।"
   },
   "mni": {
     "label": "Manipuri",
@@ -1543,6 +1591,7 @@
     "phoneNumber": "Phone number",
     "phoneHelp": "For OTP verification",
     "emailOptional": "Email (optional)",
+    "email": "Email",
     "emailHelp": "For email receipt",
     "panRequiredNote": "Required for Autopay Monthly Donation (used on the donation receipt).",
     "pincode": "PIN code",
@@ -1622,6 +1671,9 @@
     "gender": "Gender",
     "male": "Male",
     "female": "Female",
-    "other": "Other"
+    "other": "Other",
+     "otpEmailSubject": "Your Hithachintak Abhiyan verification code",
+    "otpEmailIntro": "Use the code below to verify your Hithachintak Abhiyan enrolment.",
+    "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone."
   }
 }

@@ -186,6 +186,20 @@ class EnrolmentService
 
         $member = $this->members->find($enrolment->member_id);
         $this->sms->sendOtp($member['phone'], $code);
+
+         if (! empty($member['email'])) {
+            $t = I18n::t($enrolment->language);
+            $this->email->send(
+                $member['email'],
+                $member['name'],
+                $t['otpEmailSubject'],
+                view('enrolments/otp_email', [
+                    'code'      => $code,
+                    't'         => $t,
+                    'trustName' => I18n::trustName($enrolment->language),
+                ])
+            );
+        }
     }
 
     public function verifyOtp(Enrolment $enrolment, string $submittedCode): bool
@@ -553,7 +567,7 @@ class EnrolmentService
         ]);
 
         $enrolment = $this->enrolments->find($enrolment->id);
-        $this->sendReceiptNotifications($enrolment, ['sms']);
+        $this->sendReceiptNotifications($enrolment, ['sms', 'email']);
     }
 
     /**
