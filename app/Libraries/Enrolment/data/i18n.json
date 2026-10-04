@@ -124,7 +124,7 @@
     "male": "Male",
     "female": "Female",
     "other": "Other",
-        "otpEmailSubject": "Your Hithachintak Abhiyan verification code",
+    "otpEmailSubject": "Your Hithachintak Abhiyan verification code",
     "otpEmailIntro": "Use the code below to verify your Hithachintak Abhiyan enrolment.",
     "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone."
   },
