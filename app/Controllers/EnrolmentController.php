@@ -686,7 +686,7 @@ class EnrolmentController extends BaseController
     public function payRemit($id)
     {
         $id = (int) $id;
-
+        $lang = (string) (session('ui_language') ?? 'en');
         $enrolment = $this->authorize($id);
         if ($enrolment->status !== Enrolment::STATUS_CASH_COLLECTED) {
             return redirect()->to($this->nextStepUrl($enrolment));
@@ -704,10 +704,13 @@ class EnrolmentController extends BaseController
         }
 
         return view('enrolments/checkout', [
+            'lang'              => $lang,
+            't'                 => \App\Libraries\Enrolment\I18n::t($lang),
             'title'             => 'Remit cash via UPI',
             'enrolment'         => $enrolment,
             'paymentSessionId'  => $order['payment_session_id'],
             'cashfreeEnv'       => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
+            
         ]);
     }
 
