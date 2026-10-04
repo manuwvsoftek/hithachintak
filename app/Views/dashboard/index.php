@@ -5,7 +5,7 @@
   <div>
     <div class="page-title">Dashboard</div>
     <div class="page-desc">
-      Your scope: <?= esc(session('user_prant_id') ? 'your Prant & below' : 'All India') ?>
+      Your scope: <?= esc(session('user_prant_id') ? 'Your Prant & Below' : 'All India') ?>
     </div>
   </div>
 </div>
