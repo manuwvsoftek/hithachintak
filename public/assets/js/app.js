@@ -228,7 +228,7 @@
 
     var role = roleSelect.value;
 
-    var showAyam = role === 'karyakarta' || role === 'sub_admin' || role === 'prakhand_admin';
+    var showAyam = role === 'karyakarta' || role === 'sub_admin' || role === 'prakhand_admin' || role === 'pranta_admin';
 
     ayamField.hidden = !showAyam;
     ayamSelect.disabled = !showAyam;
@@ -241,7 +241,7 @@
   function applyKaryakartaFields() {
     if (!roleSelect) return;
 
-    var isKaryakarta = roleSelect.value === 'karyakarta' || roleSelect.value === 'sub_admin' || roleSelect.value === 'prakhand_admin';
+    var isKaryakarta = roleSelect.value === 'karyakarta' || roleSelect.value === 'sub_admin' || roleSelect.value === 'prakhand_admin' || roleSelect.value === 'pranta_admin';
 
     karyakartaFields.forEach(function (field) {
         field.hidden = !isKaryakarta;

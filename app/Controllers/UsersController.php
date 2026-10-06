@@ -352,18 +352,20 @@ class UsersController extends BaseController
         $id = (int) $id;
 
         $actor  = $this->currentUser();
+    
         $target = $this->manageableTarget($actor, $id);
         if (! $target) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         $manageableRoles = $this->manageableRoles($actor);
+        $role = $actor->role;
         $rules = [
             'name'  => 'required|min_length[2]|max_length[150]',
             'phone' => "required|regex_match[/^[6-9][0-9]{9}\$/]|is_unique[users.phone,id,{$id}]",
             'role'  => 'required|in_list[' . implode(',', $manageableRoles) . ']',
         ];
-        if ($role === User::ROLE_KARYAKARTA) {
+        if ($role === User::ROLE_KARYAKARTA || $role === User::ROLE_SUB_ADMIN || $role === User::ROLE_PRAKHAND_ADMIN) {
             $rules['dob']  = 'required|valid_date[Y-m-d]';
             $rules['ayam'] = 'required|in_list[' . implode(',', UserModel::AYAMS) . ']';
         }
@@ -397,8 +399,8 @@ class UsersController extends BaseController
             'aadhar_number' => $this->request->getPost('aadhar_number') ?: null,
             'email'         => $this->request->getPost('email') ?: null,
             'profession'    => $this->request->getPost('profession') ?: null,
-            'dob'           => $role === User::ROLE_KARYAKARTA ? ($this->request->getPost('dob') ?: null) : null,
-            'ayam'          => $role === User::ROLE_KARYAKARTA ? ($this->request->getPost('ayam') ?: null) : null,
+            'dob'           => $this->request->getPost('dob') ?: null,
+            'ayam'          => $this->request->getPost('ayam') ?: null
         ]);
 
         if (! $updated) {
