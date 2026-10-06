@@ -228,7 +228,7 @@
 
     var role = roleSelect.value;
 
-    var showAyam = role === 'karyakarta';
+    var showAyam = role === 'karyakarta' || role === 'sub_admin' || role === 'prakhand_admin';
 
     ayamField.hidden = !showAyam;
     ayamSelect.disabled = !showAyam;
@@ -241,7 +241,7 @@
   function applyKaryakartaFields() {
     if (!roleSelect) return;
 
-    var isKaryakarta = roleSelect.value === 'karyakarta';
+    var isKaryakarta = roleSelect.value === 'karyakarta' || roleSelect.value === 'sub_admin' || roleSelect.value === 'prakhand_admin';
 
     karyakartaFields.forEach(function (field) {
         field.hidden = !isKaryakarta;
@@ -299,7 +299,8 @@
         markInvalid(passwordInput, 'Password must be at least 6 characters.');
       }
 
-       if (roleSelect && roleSelect.value === 'karyakarta') {
+      //  if (roleSelect && roleSelect.value === 'karyakarta') {
+      if (roleSelect) {
         var dobInput = form.querySelector('#dob');
         var ayamSelectEl = form.querySelector('#ayamSelect');
         if (dobInput && !dobInput.value) {
