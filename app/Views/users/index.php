@@ -44,6 +44,58 @@
   ];
 ?>
 
+<div class="panel">
+  <div class="panel-head">
+    <div>
+      <div class="panel-title">User Directory</div>
+      <div class="panel-note" style="margin-top:3px">Blocking an account restricts login access only — no enrolment, collection or receipt data is deleted.</div>
+    </div>
+  </div>
+  <form class="filter-row" method="get">
+    <select name="role" class="js-auto-submit">
+      <option value="">All roles</option>
+      <?php foreach ($roleLabels as $code => $label): ?>
+        <option value="<?= $code ?>" <?= ($_GET['role'] ?? '') === $code ? 'selected' : '' ?>><?= esc($label) ?></option>
+      <?php endforeach; ?>
+    </select>
+    <input type="text" name="q" placeholder="Search name or phone" value="<?= esc($_GET['q'] ?? '') ?>">
+    <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+  </form>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Prakhand</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      <?php foreach ($users as $u): ?>
+        <tr>
+          <td><?= esc($u->name) ?></td>
+          <td class="num"><?= esc(mask_phone($u->phone)) ?></td>
+          <td><?= esc($roleLabels[$u->role] ?? $u->role) ?></td>
+          <td><?= esc($u->prakhand_name ?? '—') ?></td>
+          <td><span class="pill <?= status_pill_class($u->status) ?>"><?= esc(ucfirst($u->status)) ?></span></td>
+          <td>
+            <?php if ($u->id !== $currentUserId && $actor->outranks($u->role)): ?>
+            <div class="row-actions">
+              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/edit') ?>">Edit</a>
+              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/password') ?>">Password</a>
+              <form action="<?= site_url('admin/users/' . $u->id . '/block') ?>" method="post">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-sm <?= $u->status === 'blocked' ? 'btn-success' : 'btn-danger' ?>">
+                  <?= $u->status === 'blocked' ? 'Unblock' : 'Block' ?>
+                </button>
+              </form>
+            </div>
+            <?php endif; ?>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (! $users): ?>
+        <tr><td colspan="6" class="panel-note">No users match these filters.</td></tr>
+      <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <?php if (! empty($drafts)): ?>
 <div class="panel" style="background:var(--surface-alt)">
   <div class="panel-head">
@@ -139,7 +191,17 @@
           </label>
         </div>
       <?php elseif (in_array($actor->role, ['pranta_admin'], true)): ?>
-        <div class="field"><label class="f-label">Prant</label><input class="f-input" value="Your Prant (assigned automatically)" disabled></div>
+        <?php if ($actorPrants !== null): ?>
+          <div class="field"><label class="f-label">Prant</label>
+            <select class="f-input" name="prant_id" data-prant-select>
+              <option value="">Select Prant…</option>
+              <?php foreach ($actorPrants as $p): ?><option value="<?= $p['id'] ?>"><?= esc($p['name']) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+        <?php else: ?>
+          <div class="field"><label class="f-label">Prant</label><input class="f-input" value="Your Prant (assigned automatically)" disabled></div>
+        <?php endif; ?>
+        <!-- <div class="field"><label class="f-label">Prant</label><input class="f-input" value="Your Prant (assigned automatically)" disabled></div> -->
         <div class="field" data-loc-level="1" data-variant="single"><label class="f-label">Jila</label>
           <select class="f-input" name="jila_id" data-jila-select><option value="">—</option></select>
         </div>
@@ -187,6 +249,14 @@
           <?php endforeach; ?>
         </select>
       </div>
+      <div class="field">
+        <label class="f-label">Gender</label>
+        <select class="f-input" id="genderSelect" name="gender" required>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
       <div class="field"><label class="f-label">Password (optional)</label><input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically"></div>
       <div class="field"><label class="f-label">Address (optional)</label><input class="f-input" name="address" placeholder="Address"></div>
       <div class="field"><label class="f-label">ID — Aadhar number (optional)</label><input class="f-input" name="aadhar_number" maxlength="20" placeholder="12-digit Aadhar number"></div>
@@ -202,56 +272,6 @@
 <?php endif; ?>
 <?php endif; ?>
 
-<div class="panel">
-  <div class="panel-head">
-    <div>
-      <div class="panel-title">User Directory</div>
-      <div class="panel-note" style="margin-top:3px">Blocking an account restricts login access only — no enrolment, collection or receipt data is deleted.</div>
-    </div>
-  </div>
-  <form class="filter-row" method="get">
-    <select name="role" class="js-auto-submit">
-      <option value="">All roles</option>
-      <?php foreach ($roleLabels as $code => $label): ?>
-        <option value="<?= $code ?>" <?= ($_GET['role'] ?? '') === $code ? 'selected' : '' ?>><?= esc($label) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <input type="text" name="q" placeholder="Search name or phone" value="<?= esc($_GET['q'] ?? '') ?>">
-    <button type="submit" class="btn btn-secondary btn-sm">Search</button>
-  </form>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Prakhand</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-      <?php foreach ($users as $u): ?>
-        <tr>
-          <td><?= esc($u->name) ?></td>
-          <td class="num"><?= esc(mask_phone($u->phone)) ?></td>
-          <td><?= esc($roleLabels[$u->role] ?? $u->role) ?></td>
-          <td><?= esc($u->prakhand_name ?? '—') ?></td>
-          <td><span class="pill <?= status_pill_class($u->status) ?>"><?= esc(ucfirst($u->status)) ?></span></td>
-          <td>
-            <?php if ($u->id !== $currentUserId && $actor->outranks($u->role)): ?>
-            <div class="row-actions">
-              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/edit') ?>">Edit</a>
-              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/password') ?>">Password</a>
-              <form action="<?= site_url('admin/users/' . $u->id . '/block') ?>" method="post">
-                <?= csrf_field() ?>
-                <button type="submit" class="btn btn-sm <?= $u->status === 'blocked' ? 'btn-success' : 'btn-danger' ?>">
-                  <?= $u->status === 'blocked' ? 'Unblock' : 'Block' ?>
-                </button>
-              </form>
-            </div>
-            <?php endif; ?>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (! $users): ?>
-        <tr><td colspan="6" class="panel-note">No users match these filters.</td></tr>
-      <?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-</div>
+
 
 <?= $this->endSection() ?>

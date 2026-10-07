@@ -126,7 +126,8 @@
     "other": "Other",
     "otpEmailSubject": "Your Hithachintak Abhiyan verification code",
     "otpEmailIntro": "Use the code below to verify your Hithachintak Abhiyan enrolment.",
-    "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone."
+    "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone.",
+    "fullName": "Full name"
   },
   "hi": {
     "label": "Hindi",
@@ -255,7 +256,8 @@
     "other": "अन्य",
      "otpEmailSubject": "आपका हिताचिंतक अभियान सत्यापन कोड",
     "otpEmailIntro": "अपना हिताचिंतक अभियान नामांकन सत्यापित करने के लिए नीचे दिया गया कोड उपयोग करें।",
-    "otpEmailValidity": "यह कोड 5 मिनट के लिए वैध है। इसे किसी के साथ साझा न करें।"
+    "otpEmailValidity": "यह कोड 5 मिनट के लिए वैध है। इसे किसी के साथ साझा न करें।",
+    "fullName": "पूरा नाम"
   },
   "kn": {
     "label": "Kannada",
@@ -384,7 +386,8 @@
     "other": "ಇತರೆ",
     "otpEmailSubject": "ನಿಮ್ಮ ಹಿತಚಿಂತಕ ಅಭಿಯಾನ ಪರಿಶೀಲನಾ ಕೋಡ್",
     "otpEmailIntro": "ನಿಮ್ಮ ಹಿತಚಿಂತಕ ಅಭಿಯಾನ ನೋಂದಣಿಯನ್ನು ಪರಿಶೀಲಿಸಲು ಕೆಳಗಿನ ಕೋಡ್ ಬಳಸಿ.",
-    "otpEmailValidity": "ಈ ಕೋಡ್ 5 ನಿಮಿಷಗಳ ಕಾಲ ಮಾತ್ರ ಮಾನ್ಯವಾಗಿರುತ್ತದೆ. ಇದನ್ನು ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಬೇಡಿ."
+    "otpEmailValidity": "ಈ ಕೋಡ್ 5 ನಿಮಿಷಗಳ ಕಾಲ ಮಾತ್ರ ಮಾನ್ಯವಾಗಿರುತ್ತದೆ. ಇದನ್ನು ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಬೇಡಿ.",
+    "fullName": "ಪೂರ್ಣ ಹೆಸರು"
   },
   "gu": {
     "label": "Gujarati",
@@ -513,7 +516,8 @@
     "other": "અન્ય",
     "otpEmailSubject": "તમારો હિતચિંતક અભિયાન ચકાસણી કોડ",
     "otpEmailIntro": "તમારી હિતચિંતક અભિયાન નોંધણી ચકાસવા માટે નીચેનો કોડ વાપરો.",
-    "otpEmailValidity": "આ કોડ 5 મિનિટ માટે માન્ય છે. તેને કોઈની સાથે શેર ન કરો."
+    "otpEmailValidity": "આ કોડ 5 મિનિટ માટે માન્ય છે. તેને કોઈની સાથે શેર ન કરો.",
+    "fullName": "પૂરું નામ"
   },
   "te": {
     "label": "Telugu",
@@ -642,7 +646,8 @@
     "other": "మరియు",
     "otpEmailSubject": "మీ హితచింతక్ అభియాన్ ధృవీకరణ కోడ్",
     "otpEmailIntro": "మీ హితచింతక్ అభియాన్ నమోదును ధృవీకరించడానికి దిగువ కోడ్‌ను ఉపయోగించండి.",
-    "otpEmailValidity": "ఈ కోడ్ 5 నిమిషాల పాటు మాత్రమే చెల్లుతుంది. దీన్ని ఎవరితోనూ షేర్ చేయకండి."
+    "otpEmailValidity": "ఈ కోడ్ 5 నిమిషాల పాటు మాత్రమే చెల్లుతుంది. దీన్ని ఎవరితోనూ షేర్ చేయకండి.",
+    "fullName": "పూర్తి పేరు"
   },
   "ml": {
     "label": "Malayalam",
@@ -771,7 +776,8 @@
     "other": "മറ്റുള്ളവ",
     "otpEmailSubject": "നിങ്ങളുടെ ഹിതചിന്തക് അഭിയാൻ സ്ഥിരീകരണ കോഡ്",
     "otpEmailIntro": "നിങ്ങളുടെ ഹിതചിന്തക് അഭിയാൻ എൻറോൾമെന്റ് സ്ഥിരീകരിക്കാൻ താഴെയുള്ള കോഡ് ഉപയോഗിക്കുക.",
-    "otpEmailValidity": "ഈ കോഡ് 5 മിനിറ്റ് മാത്രം സാധുവാണ്. ഇത് ആരുമായും പങ്കിടരുത്."
+    "otpEmailValidity": "ഈ കോഡ് 5 മിനിറ്റ് മാത്രം സാധുവാണ്. ഇത് ആരുമായും പങ്കിടരുത്.",
+    "fullName": "മുഴുവൻ പേര്"
   },
   "ta": {
     "label": "Tamil",
@@ -900,7 +906,8 @@
     "other": "மற்றவை",
     "otpEmailSubject": "உங்கள் ஹிதசிந்தக் அபியான் சரிபார்ப்பு குறியீடு",
     "otpEmailIntro": "உங்கள் ஹிதசிந்தக் அபியான் பதிவை சரிபார்க்க கீழே உள்ள குறியீட்டைப் பயன்படுத்தவும்.",
-    "otpEmailValidity": "இந்த குறியீடு 5 நிமிடங்களுக்கு மட்டும் செல்லுபடியாகும். இதை யாருடனும் பகிர வேண்டாம்."
+    "otpEmailValidity": "இந்த குறியீடு 5 நிமிடங்களுக்கு மட்டும் செல்லுபடியாகும். இதை யாருடனும் பகிர வேண்டாம்.",
+    "fullName": "முழு பெயர்"
   },
   "mr": {
     "label": "Marathi",
@@ -1029,7 +1036,8 @@
     "other": "इतर",
     "otpEmailSubject": "तुमचा हितचिंतक अभियान पडताळणी कोड",
     "otpEmailIntro": "तुमची हितचिंतक अभियान नोंदणी पडताळण्यासाठी खालील कोड वापरा.",
-    "otpEmailValidity": "हा कोड 5 मिनिटांसाठी वैध आहे. तो कोणाशीही सामायिक करू नका."
+    "otpEmailValidity": "हा कोड 5 मिनिटांसाठी वैध आहे. तो कोणाशीही सामायिक करू नका.",
+    "fullName": "पूर्ण नाव"
   },
   "or": {
     "label": "Odia",
@@ -1158,7 +1166,8 @@
     "other": "ଅନ୍ୟ",
     "otpEmailSubject": "ଆପଣଙ୍କ ହିତଚିନ୍ତକ ଅଭିଯାନ ଯାଞ୍ଚ କୋଡ୍",
     "otpEmailIntro": "ଆପଣଙ୍କ ହିତଚିନ୍ତକ ଅଭିଯାନ ପଞ୍ଜୀକରଣ ଯାଞ୍ଚ କରିବା ପାଇଁ ତଳେ ଥିବା କୋଡ୍ ବ୍ୟବହାର କରନ୍ତୁ।",
-    "otpEmailValidity": "ଏହି କୋଡ୍ 5 ମିନିଟ୍ ପାଇଁ ବୈଧ। ଏହାକୁ କାହା ସହିତ ବାଣ୍ଟନ୍ତୁ ନାହିଁ।"
+    "otpEmailValidity": "ଏହି କୋଡ୍ 5 ମିନିଟ୍ ପାଇଁ ବୈଧ। ଏହାକୁ କାହା ସହିତ ବାଣ୍ଟନ୍ତୁ ନାହିଁ।",
+    "fullName": "ପୂର୍ଣ୍ଣ ନାମ"
   },
   "bn": {
     "label": "Bengali",
@@ -1287,7 +1296,8 @@
     "other": "অন্যান্য",
     "otpEmailSubject": "আপনার হিতচিন্তক অভিযান যাচাইকরণ কোড",
     "otpEmailIntro": "আপনার হিতচিন্তক অভিযান নিবন্ধন যাচাই করতে নিচের কোডটি ব্যবহার করুন।",
-    "otpEmailValidity": "এই কোডটি ৫ মিনিটের জন্য বৈধ। এটি কারো সাথে শেয়ার করবেন না।"
+    "otpEmailValidity": "এই কোডটি ৫ মিনিটের জন্য বৈধ। এটি কারো সাথে শেয়ার করবেন না।",
+    "fullName": "পূর্ণ নাম"
   },
   "pa": {
     "label": "Punjabi",
@@ -1416,7 +1426,8 @@
     "other": "ਹੋਰ",
     "otpEmailSubject": "ਤੁਹਾਡਾ ਹਿਤਚਿੰਤਕ ਅਭਿਆਨ ਤਸਦੀਕ ਕੋਡ",
     "otpEmailIntro": "ਆਪਣੀ ਹਿਤਚਿੰਤਕ ਅਭਿਆਨ ਰਜਿਸਟ੍ਰੇਸ਼ਨ ਦੀ ਤਸਦੀਕ ਕਰਨ ਲਈ ਹੇਠਾਂ ਦਿੱਤਾ ਕੋਡ ਵਰਤੋ।",
-    "otpEmailValidity": "ਇਹ ਕੋਡ 5 ਮਿੰਟਾਂ ਲਈ ਵੈਧ ਹੈ। ਇਸਨੂੰ ਕਿਸੇ ਨਾਲ ਵੀ ਸਾਂਝਾ ਨਾ ਕਰੋ।"
+    "otpEmailValidity": "ਇਹ ਕੋਡ 5 ਮਿੰਟਾਂ ਲਈ ਵੈਧ ਹੈ। ਇਸਨੂੰ ਕਿਸੇ ਨਾਲ ਵੀ ਸਾਂਝਾ ਨਾ ਕਰੋ।",
+    "fullName": "ਪੂਰਾ ਨਾਮ"
   },
   "as": {
     "label": "Assamese",
@@ -1545,7 +1556,8 @@
     "other": "অন্যান্য",
     "otpEmailSubject": "আপোনাৰ হিতচিন্তক অভিযান সত্যাপন কোড",
     "otpEmailIntro": "আপোনাৰ হিতচিন্তক অভিযান পঞ্জীয়ন সত্যাপন কৰিবলে তলৰ কোডটো ব্যবহাৰ কৰক।",
-    "otpEmailValidity": "এই কোডটো ৫ মিনিটৰ বাবে বৈধ। ইয়াক কাৰো সৈতে শ্বেয়াৰ নকৰিব।"
+    "otpEmailValidity": "এই কোডটো ৫ মিনিটৰ বাবে বৈধ। ইয়াক কাৰো সৈতে শ্বেয়াৰ নকৰিব।",
+    "fullName": "সম্পূৰ্ণ নাম"
   },
   "mni": {
     "label": "Manipuri",
@@ -1674,6 +1686,7 @@
     "other": "Other",
      "otpEmailSubject": "Your Hithachintak Abhiyan verification code",
     "otpEmailIntro": "Use the code below to verify your Hithachintak Abhiyan enrolment.",
-    "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone."
+    "otpEmailValidity": "This code is valid for 5 minutes. Do not share it with anyone.",
+    "fullName": "Full name"
   }
 }

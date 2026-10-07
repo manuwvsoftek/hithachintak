@@ -94,16 +94,13 @@
     <div class="section-label" style="margin:16px 0 10px;font-size:11px;font-weight:800;color:var(--blue-700);text-transform:uppercase"><?= esc($t['memberDetails']) ?></div>
     <div class="form-grid">
       <div class="field">
-        <label class="f-label"><?= esc($t['firstName']) ?> <span class="required-mark">*</span></label>
+        <label class="f-label"><?= esc($t['fullName']) ?> <span class="required-mark">*</span></label>
         <input class="f-input" id="memberFirstName" name="member_first_name"
-          value="<?= esc($forceSelf ? $selfFirstName : (old('member_first_name') ?? '')) ?>"
-          placeholder="<?= esc($t['firstName']) ?>" required <?= $forceSelf ? 'readonly' : '' ?>>
+          value="<?= esc($forceSelf ? $selfFullName : (old('member_first_name') ?? '')) ?>"
+          placeholder="<?= esc($t['fullName']) ?>" required <?= $forceSelf ? 'readonly' : '' ?>>
         <?php if ($forceSelf): ?><div class="field-note">From your account</div><?php endif; ?>
       </div>
-      <div class="field">
-        <label class="f-label"><?= esc($t['lastName']) ?></label>
-        <input class="f-input" id="memberLastName" name="member_last_name" value="<?= esc($forceSelf ? $selfLastName : (old('member_last_name') ?? '')) ?>" placeholder="<?= esc($t['lastName']) ?>">
-      </div>
+      <input type="hidden" id="memberLastName" name="member_last_name" value="<?= esc(old('member_last_name') ?? '') ?>">
       <div class="field">
         <label class="f-label"><?= esc($t['ageOrDobLabel']) ?> <span class="required-mark">*</span></label>
         <input class="f-input" id="ageOrDob" name="age_or_dob" value="<?= esc(old('age_or_dob') ?? '') ?>" placeholder="<?= esc($t['agePlaceholder']) ?>" required>
@@ -183,7 +180,7 @@
   var T_MINIMUM = <?= json_encode($t['minimumWord']) ?>;
   var T_MAXIMUM = <?= json_encode($t['maximumWord']) ?>;
   var T_PER_MONTH_AUTOPAY = <?= json_encode($t['perMonthAutopay']) ?>;
-  var T_FIRST_NAME = <?= json_encode($t['firstName']) ?>;
+  var T_FIRST_NAME = <?= json_encode($t['fullName']) ?>;
   var T_LAST_NAME = <?= json_encode($t['lastName']) ?>;
   var T_AGE_PLACEHOLDER = <?= json_encode($t['agePlaceholder']) ?>;
   var T_PROFESSION = <?= json_encode($t['professionLabel']) ?>;
@@ -450,8 +447,7 @@
     row.innerHTML = '<div class="form-grid-tight">' +
       '<div><label class="f-label-sm">' + T_FIRST_NAME + ' <span class="required-mark">*</span></label>' +
         '<input class="f-input family-first-name" name="family_first_name[]" required></div>' +
-      '<div><label class="f-label-sm">' + T_LAST_NAME + '</label>' +
-        '<input class="f-input family-last-name" name="family_last_name[]"></div>' +
+        '<input type="hidden" class="family-last-name" name="family_last_name[]">' +
       '<div><label class="f-label-sm">' + T_AGE_PLACEHOLDER + ' <span class="required-mark">*</span></label>' +
         '<input class="f-input family-age" name="family_age[]" required></div>' +
         '<div><label class="f-label-sm">' + T_GENDER + ' <span class="required-mark">*</span></label>' +
@@ -531,7 +527,8 @@
         if (seq !== phoneCheckSeq) { return; }
         phoneDuplicate = !!data.registered;
         if (phoneDuplicate) {
-          phoneNote.textContent = 'This mobile number is already registered for Hithachintak.';
+         // phoneNote.textContent = 'This mobile number is already registered for Hithachintak.';
+         phoneNote.textContent = 'Mobile number already in use, enter different number.';
           phoneNote.classList.add('field-error-note');
           memberPhone.classList.add('field-invalid');
         }

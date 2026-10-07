@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Entities\User;
 use App\Libraries\Msg91\Msg91Sms;
+use App\Libraries\Rbac\LocationScope;
 use App\Libraries\Secrets\Vault;
 use App\Models\AuditLogModel;
 use App\Models\JilaModel;
@@ -74,12 +75,13 @@ class UsersController extends BaseController
                 $resumeDraft = json_decode($draft['payload'], true);
             }
         }
-
+         $prants = (new PrantModel())->orderBy('name', 'ASC')->findAll();
         return view('users/index', [
             'title'      => 'Users & Hierarchy',
             'users'      => $users,
             'hierarchy'  => $hierarchy,
-            'prants'     => (new PrantModel())->orderBy('name', 'ASC')->findAll(),
+            'prants'     => $prants,
+            'actorPrants' => $this->actorPrantOptions($actor, $prants),
             'roleLabels' => $visibleRoleLabels,
             'hasGlobalAccess' => $actor->hasGlobalAccess(),
             'currentUserId' => $actor->id,
@@ -111,6 +113,33 @@ class UsersController extends BaseController
         ));
     }
 
+    /**
+     * A Pranta Admin assigned to more than one Prant (multi-select, or
+     * "All Prants") needs a picker on the New/Edit User forms instead of
+     * the usual fixed "your Prant" text — this is that option list, or
+     * null when a fixed single Prant is enough (every other actor, and a
+     * Pranta Admin assigned to exactly one Prant).
+     *
+     * @param list<array<string, mixed>> $allPrants every Prant, already loaded by the caller
+     * @return list<array<string, mixed>>|null
+     */
+    private function actorPrantOptions(User $actor, array $allPrants): ?array
+    {
+        if ($actor->role !== User::ROLE_PRANTA_ADMIN) {
+            return null;
+        }
+
+        $ids = LocationScope::prantIds($actor);
+        if ($ids === null) {
+            return $allPrants; // scope_all — any Prant is fair game
+        }
+        if (count($ids) <= 1) {
+            return null; // exactly one assigned Prant — the fixed text is enough
+        }
+
+        return array_values(array_filter($allPrants, static fn ($p) => in_array((int) $p['id'], $ids, true)));
+    }
+
     /** Loads a target user, but only if $actor is allowed to manage them (in-scope and outranked). Returns null otherwise. */
     private function manageableTarget(User $actor, int $id): ?User
     {
@@ -120,6 +149,38 @@ class UsersController extends BaseController
         }
 
         return $target;
+    }
+
+      /**
+     * The Prant the user being created/edited belongs to, from the actor's
+     * point of view. A globally-scoped actor (or a Pranta Admin with
+     * "All Prants") picks from the full list; a Pranta Admin with more
+     * than one specifically assigned Prant picks from a form field too,
+     * but only a value actually within their own assigned set is ever
+     * trusted — never a raw POST value for a scope they don't hold.
+     * Every other actor (a single-Prant Pranta Admin included) is simply
+     * fixed to their own Prant, matching their own form field being a
+     * disabled display rather than an input.
+     */
+    private function resolveActorPrantId(User $actor): ?int
+    {
+        $posted = $this->request->getPost('prant_id') ? (int) $this->request->getPost('prant_id') : null;
+
+        if ($actor->hasGlobalAccess()) {
+            return $posted;
+        }
+
+        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
+            $allowedIds = LocationScope::prantIds($actor);
+            if ($allowedIds === null) {
+                return $posted; // scope_all — any Prant is fair game
+            }
+            if (count($allowedIds) > 1) {
+                return ($posted !== null && in_array($posted, $allowedIds, true)) ? $posted : null;
+            }
+        }
+
+        return $actor->prant_id;
     }
 
     /**
@@ -292,6 +353,7 @@ class UsersController extends BaseController
             'profession'          => $this->request->getPost('profession') ?: null,
             'dob'                 => $this->request->getPost('dob') ?: null,
             'ayam'                => $this->request->getPost('ayam') ?: null,
+            'gender'              => $this->request->getPost('gender') ?: null,
             'status'              => 'active',
             'must_reset_password' => $adminPassword === '',
             'created_by'          => $actor->id,
@@ -324,6 +386,7 @@ class UsersController extends BaseController
         if (! $target) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
+         $prants = (new PrantModel())->orderBy('name', 'ASC')->findAll();
 
         return view('users/edit', [
             'title'           => 'Edit User',
@@ -332,7 +395,8 @@ class UsersController extends BaseController
             'roleLabels'      => User::ROLE_LABELS,
             'manageableRoles' => $this->manageableRoles($actor),
             'hasGlobalAccess' => $actor->hasGlobalAccess(),
-            'prants'          => (new PrantModel())->orderBy('name', 'ASC')->findAll(),
+            'prants'          => $prants,
+            'actorPrants'     => $this->actorPrantOptions($actor, $prants),
             'jilas'           => $target->prant_id ? (new JilaModel())->forPrant($target->prant_id) : [],
             'prakhands'       => $target->jila_id ? (new PrakhandModel())->forJila($target->jila_id) : [],
             // Falls back to the target's legacy single prant_id/jila_id/
@@ -400,7 +464,8 @@ class UsersController extends BaseController
             'email'         => $this->request->getPost('email') ?: null,
             'profession'    => $this->request->getPost('profession') ?: null,
             'dob'           => $this->request->getPost('dob') ?: null,
-            'ayam'          => $this->request->getPost('ayam') ?: null
+            'ayam'          => $this->request->getPost('ayam') ?: null,
+            'gender'        => $this->request->getPost('gender') ?: null,
         ]);
 
         if (! $updated) {

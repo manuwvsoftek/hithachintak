@@ -96,7 +96,17 @@
           </label>
         </div>
       <?php elseif (in_array($actor->role, ['pranta_admin'], true)): ?>
-        <div class="field"><label class="f-label">Prant</label><input class="f-input" value="Your Prant (assigned automatically)" disabled></div>
+        <?php elseif (in_array($actor->role, ['pranta_admin'], true)): ?>
+        <?php if ($actorPrants !== null): ?>
+          <div class="field"><label class="f-label">Prant</label>
+            <select class="f-input" name="prant_id" data-prant-select>
+              <option value="">Select Prant…</option>
+              <?php foreach ($actorPrants as $p): ?><option value="<?= $p['id'] ?>" <?= (int) $target->prant_id === (int) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+        <?php else: ?>
+          <div class="field"><label class="f-label">Prant</label><input class="f-input" value="Your Prant (assigned automatically)" disabled></div>
+        <?php endif; ?>
         <div class="field" data-loc-level="1" data-variant="single"><label class="f-label">Jila</label>
           <select class="f-input" name="jila_id" data-jila-select>
             <option value="">—</option>
@@ -170,6 +180,14 @@
           <?php foreach ($ayams as $a): ?>
             <option value="<?= esc($a) ?>" <?= $target->ayam ===  $a ? 'selected' : '' ?>><?= esc($a) ?></option>
           <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="field">
+        <label class="f-label">Gender</label>
+        <select class="f-input" id="genderSelect" name="gender" required>
+          <option value="Male" <?= $target->gender === 'Male' ? 'selected' : '' ?>>Male</option>
+          <option value="Female" <?= $target->gender === 'Female' ? 'selected' : '' ?>>Female</option>
+          <option value="Other" <?= $target->gender === 'Other' ? 'selected' : '' ?>>Other</option>
         </select>
       </div>
       <div class="field"><label class="f-label">Address (optional)</label><input class="f-input" name="address" value="<?= esc($target->address ?? '') ?>" placeholder="Address"></div>

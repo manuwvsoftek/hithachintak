@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Entities\Enrolment;
 use App\Entities\User;
+use App\Libraries\Enrolment\AgeParser;
 use App\Libraries\Enrolment\EnrolmentService;
 use App\Models\AuditLogModel;
 use App\Models\CashRemittanceModel;
@@ -374,9 +375,11 @@ class EnrolmentController extends BaseController
         $isSelfEnrolment = ! $actor->isDevAdmin() && ! (new EnrolmentModel())->hasCompletedHithachintak($actor->phone);
         if ($isSelfEnrolment) {
             $post['programme_code'] = 'hc';
-            $nameParts = explode(' ', trim($actor->name), 2);
-            $post['member_first_name'] = $nameParts[0] ?? '';
-            $post['member_last_name']  = $nameParts[1] ?? '';
+           // member_first_name carries the whole name (the form shows a
+            // single "Full name" field; member_last_name is hidden and
+            // always blank) — never split the account's name here.
+            $post['member_first_name'] = trim($actor->name);
+            $post['member_last_name']  = '';
             $post['member_phone']      = $actor->phone;
         }
 
@@ -413,6 +416,24 @@ class EnrolmentController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        // First + last name are each checked individually above (100 chars
+        // apiece) but MemberModel stores them combined with a 250-char
+        // limit — a long name in both fields can pass those individual
+        // checks and still fail once combined, so catch that here too.
+        $memberFullName = trim($post['member_first_name'] . ' ' . ($post['member_last_name'] ?? ''));
+        if (mb_strlen($memberFullName) > 250) {
+            return redirect()->back()->withInput()
+                ->with('errors', ['member_last_name' => 'Full name (first + last) must be 250 characters or fewer.']);
+        }
+
+        // Minimum age applies to every enrolled person, not just the
+        // primary member — "Age / DOB" accepts either form, so this
+        // parses whichever was typed rather than assuming a format.
+        if (! AgeParser::meetsMinimumAge($post['age_or_dob'])) {
+            return redirect()->back()->withInput()
+                ->with('errors', ['age_or_dob' => 'Must be at least ' . AgeParser::MIN_AGE . ' years old — enter a valid age or date of birth.']);
+        }
+
         // A Hithachintak-registered number can't be reused as the primary
         // member of a second Hithachintak enrolment (client already warns
         // about this on blur — this is the authoritative check, never
@@ -435,13 +456,26 @@ class EnrolmentController extends BaseController
         $familyGender      = $this->request->getPost('family_gender') ?? [];
         $familyMembers     = [];
         foreach ($familyFirstNames as $i => $firstName) {
+             // A row with no name at all is an untouched extra row, not a
+            // real family member — EnrolmentService drops it silently.
+            // A row the admin actually filled in is held to the same
+            // minimum age as the primary member, as a real validation
+            // error rather than a silent drop that would otherwise lose
+            // a family member the admin thinks they successfully added.
+            if (trim((string) $firstName) !== '' && ! AgeParser::meetsMinimumAge($familyAges[$i] ?? null)) {
+                return redirect()->back()->withInput()
+                    ->with('errors', ['family_age' => 'Family member ' . ($i + 1) . ': must be at least ' . AgeParser::MIN_AGE . ' years old — enter a valid age or date of birth.']);
+            }
+
+            $gender = $familyGenders[$i] ?? null;
+
             $familyMembers[] = [
                 'first_name'     => $firstName,
                 'last_name'      => $familyLastNames[$i] ?? null,
                 'age_or_dob'     => $familyAges[$i] ?? null,
                 'profession'     => $familyProfessions[$i] ?? null,
                 'contact_number' => $familyContacts[$i] ?? null,
-                'gender'         =>  $familyGender[$i] ?? null,
+                'gender'         => in_array($gender, ['Male', 'Female', 'Other'], true) ? $gender : null,
             ];
         }
 
