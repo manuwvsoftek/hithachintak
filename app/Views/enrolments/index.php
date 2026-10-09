@@ -100,7 +100,7 @@
   <div class="table-wrap" style="margin-top:16px">
     <table>
       <thead>
-        <tr><th>Member</th><th>Programme</th><th>Location</th><th>Karyakarta</th><th>Amount</th><th>Mode</th><th>Status</th><th>Receipt</th></tr>
+        <tr><th>Member</th><th>Programme</th><th>Location</th><th>Karyakarta</th><th>Amount</th><th>Mode</th><th>Status</th><th>Action</th></tr>
       </thead>
       <tbody>
       <?php foreach ($enrolments as $e): ?>
@@ -126,11 +126,11 @@
           <td class="num"><?= fmt_rupees($e->amount) ?></td>
           <td><?= esc($e->payment_mode ? ucfirst($e->payment_mode) : '—') ?></td>
           <td><span class="pill <?= status_pill_class($e->status) ?>"><?= esc(ucwords(str_replace('_', ' ', $e->status))) ?></span></td>
-          <td>
+         <td>
             <?php if ($e->hasReceipt()): ?>
-              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/enrolments/' . $e->id . '/receipt') ?>">View</a>
+              <a class="btn btn-ghost btn-sm" href="<?= enrolment_next_step_url($e) ?>">View</a>
             <?php else: ?>
-              <span class="panel-note">—</span>
+              <a class="btn btn-ghost btn-sm" href="<?= enrolment_next_step_url($e) ?>">Continue</a>
             <?php endif; ?>
           </td>
         </tr>

@@ -52,6 +52,26 @@ if (! function_exists('status_pill_class')) {
     }
 }
 
+if (! function_exists('enrolment_next_step_url')) {
+    /**
+     * Where an enrolment list row's action link should take the user —
+     * mirrors EnrolmentController::nextStepUrl() (the same routing
+     * already used after every payment-flow POST) so a row that isn't
+     * receipted yet resumes at whatever step is actually next instead of
+     * being a dead end with no link at all.
+     */
+    function enrolment_next_step_url(object $enrolment): string
+    {
+        return match ($enrolment->status) {
+            'otp_pending'    => site_url("admin/enrolments/{$enrolment->id}/otp"),
+            'cash_collected' => site_url("admin/enrolments/{$enrolment->id}/remit"),
+            default          => $enrolment->hasReceipt()
+                ? site_url("admin/enrolments/{$enrolment->id}/receipt")
+                : site_url("admin/enrolments/{$enrolment->id}/payment"),
+        };
+    }
+}
+
 if (! function_exists('report_field_value')) {
     /** Plain-text rendering of one Reports field — shared by the on-screen table, CSV, Excel and PDF exports. */
     function report_field_value(object $row, string $field): string
