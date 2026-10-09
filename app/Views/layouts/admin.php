@@ -34,10 +34,10 @@
       </span>
     </a>
     <div class="topbar-right">
-      <div class="topbar-user">
+       <a class="topbar-user" href="<?= site_url('account/profile') ?>" style="text-decoration:none;color:inherit" title="My Account">
         <b><?= esc(session('user_name')) ?></b>
         <?= esc(\App\Entities\User::ROLE_LABELS[session('user_role')] ?? '') ?>
-      </div>
+      </a>
       <form action="<?= site_url('account/set-language') ?>" method="post" class="topbar-lang" style="margin:0" title="Language shown on the enrolment form and the member's receipt">
         <?= csrf_field() ?>
         <select name="lang" class="js-auto-submit">

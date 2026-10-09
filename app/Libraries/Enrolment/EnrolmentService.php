@@ -623,6 +623,29 @@ class EnrolmentService
         return strtoupper($programmeCode) . '/' . $year . '/' . str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
     }
 
+        /**
+     * Backfills public_token on the spot for enrolments that received
+     * their receipt_no before this column existed (it was added in a
+     * later migration, with no backfill for already-receipted rows) —
+     * finalizeReceipt() only ever assigns one the first time a receipt
+     * is created, so without this, any such row's link stays empty on
+     * every future resend, forever.
+     */
+    private function ensurePublicToken(Enrolment $enrolment): string
+    {
+        if (! empty($enrolment->public_token)) {
+            return $enrolment->public_token;
+        }
+
+        $token = $this->generatePublicToken();
+        $this->enrolments->update($enrolment->id, ['public_token' => $token]);
+        $enrolment->public_token = $token;
+
+        return $token;
+    }
+
+
+
     /**
      * Sends the receipt over the requested channels. Defaults to SMS only
      * (called automatically on payment); WhatsApp/Email are opt-in from
@@ -634,10 +657,11 @@ class EnrolmentService
     {
         $member = $this->members->find($enrolment->member_id);
         $sent   = [];
-        $link   = base_url('h/rid=' . $enrolment->public_token);
-
+      //  $link   = base_url('h/rid=' . $enrolment->public_token);
+                    $link   = base_url('h/rid=' . $this->ensurePublicToken($enrolment));
+                    $token  = $this->ensurePublicToken($enrolment);
         if (in_array('sms', $channels, true)) {
-            $ok = $this->sms->sendReceiptNotification($member['phone'], $link);
+            $ok = $this->sms->sendReceiptNotification($member['phone'], $token);
             if ($ok) {
                 $this->enrolments->update($enrolment->id, ['receipt_sent_sms_at' => date('Y-m-d H:i:s')]);
             }

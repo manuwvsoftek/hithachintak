@@ -24,6 +24,9 @@ $routes->group('account', ['filter' => 'authGuard'], static function ($routes) {
     $routes->get('set-password', 'AccountController::showSetPassword');
     $routes->post('set-password', 'AccountController::setPassword');
     $routes->post('set-language', 'AccountController::setLanguage');
+    $routes->get('profile', 'AccountController::showProfile');
+    $routes->post('profile', 'AccountController::updateProfile');
+    $routes->post('change-password', 'AccountController::changePassword');
 });
 
 // --- Payment gateway webhooks (no auth — verified by signature) ---

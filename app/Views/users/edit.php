@@ -172,7 +172,7 @@
       <?php endif; ?>
       <div class="field" data-karyakarta-field hidden>
         <label class="f-label">DOB</label>
-        <input type="date" class="f-input" id="dob" name="dob" value="<?= esc($target->dob ?? '') ?>" disabled>
+        <input type="date" class="f-input" id="dob" name="dob" value="<?= esc($target->dob ?? '') ?>">
       </div>
       <div class="field" data-karyakarta-field hidden><label class="f-label">Ayam</label>
         <select class="f-input" id="ayamSelect" name="ayam">

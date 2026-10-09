@@ -814,6 +814,7 @@ class EnrolmentController extends BaseController
         $id = (int) $id;
 
         $enrolment = $this->authorize($id);
+      //  print_r($enrolment); exit();
         if (! $enrolment->hasReceipt() || ! in_array($channel, ['whatsapp', 'email', 'sms'], true)) {
             throw PageNotFoundException::forPageNotFound();
         }

@@ -127,7 +127,7 @@ class Msg91Sms
      */
     public function sendReceiptNotification(string $phone, string $link): bool
     {
-        return $this->sendTemplate('Receipt Notification', $phone, ['LINK' => $link]);
+        return $this->sendTemplate('Receipt Notification', $phone, ['alp' => $link]);
     }
 
     public function sendKaryakartaCredentials(string $phone, string $name, string $tempPassword): bool
