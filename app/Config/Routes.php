@@ -36,6 +36,10 @@ $routes->post('webhooks/cashfree/(:segment)', 'PaymentController::cashfreeWebhoo
 $routes->get('h/rid=(:segment)', 'PublicReceiptController::show/$1');
 $routes->get('h/rid=(:segment)/pdf', 'PublicReceiptController::pdf/$1');
 
+// --- Public phone-gated receipt lookup, an alternative to the token link above (no auth — rate-limited) ---
+$routes->get('h/lookup', 'PublicReceiptController::showLookup');
+$routes->post('h/lookup', 'PublicReceiptController::findByPhone');
+
 // --- Public info pages, linked from the login screen (no auth) ---
 $routes->get('about', 'PagesController::about');
 $routes->get('contact-us', 'PagesController::contactUs');

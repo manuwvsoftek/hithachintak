@@ -29,4 +29,7 @@
   <a href="<?= site_url('termsconditions') ?>">Terms & Conditions</a>
   <a href="<?= site_url('services') ?>">Our Services</a>
 </div>
+<div class="auth-links" style="margin-top:14px;justify-content:center;">
+  <h3 style="color:white;">Vishwa Hindu Karnataka Trust</h3>
+</div>
 <?= $this->endSection() ?>

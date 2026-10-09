@@ -124,4 +124,24 @@ class EnrolmentModel extends Model
             ->where("enrolments.receipt_no IS NOT NULL")
             ->countAllResults() > 0;
     }
+
+    /**
+     * Finds the latest receipted enrolment for a phone number — used by
+     * the public "find my receipt" lookup (h/lookup), the phone-gated
+     * alternative to the per-enrolment token link. A phone number isn't
+     * unique at the member level (members.phone has no unique
+     * constraint — a shared family number can enrol several people), and
+     * the same member can have several receipted enrolments over time
+     * (different programmes/years), so this intentionally returns only
+     * the most recent one rather than erroring on ambiguity.
+     */
+    public function mostRecentReceiptedByPhone(string $phone): ?Enrolment
+    {
+        return $this->select('enrolments.*')
+            ->join('members', 'members.id = enrolments.member_id')
+            ->where('members.phone', $phone)
+            ->where('enrolments.receipt_no IS NOT NULL')
+            ->orderBy('enrolments.id', 'DESC')
+            ->first();
+    }
 }
