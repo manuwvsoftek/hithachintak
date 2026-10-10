@@ -311,3 +311,70 @@ tbody tr:hover{background:var(--surface-alt)}
 }
 .install-banner span{flex:1;min-width:160px}
 .install-banner .btn{flex:none}
+
+/* ---- public landing page ---- */
+body:has(.landing-nav){background:var(--bg)}
+.landing-nav{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:16px clamp(16px,4vw,48px);background:var(--blue-900);
+}
+.landing-nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff;font-weight:700;font-family:Montserrat,sans-serif;font-size:15px}
+.landing-nav-brand img{width:30px;height:30px}
+.landing-nav-links{display:flex;gap:22px}
+.landing-nav-links a{color:#C7D4E8;text-decoration:none;font-size:13.5px;font-weight:600}
+.landing-nav-links a:hover{color:#fff}
+.landing-nav-actions{display:flex;gap:10px}
+@media (max-width:760px){.landing-nav-links{display:none}}
+
+.landing-hero{
+  display:grid;grid-template-columns:1.2fr 0.8fr;align-items:center;gap:40px;
+  max-width:1100px;margin:0 auto;padding:clamp(40px,8vw,88px) clamp(16px,4vw,48px) clamp(32px,6vw,56px);
+}
+.landing-hero h1{font-size:clamp(30px,4.2vw,44px);color:var(--blue-900);line-height:1.12;text-wrap:balance}
+.landing-hero-sub{margin-top:16px;font-size:15.5px;line-height:1.65;color:var(--ink-soft);max-width:52ch}
+.landing-hero-actions{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+.landing-hero-actions .btn{padding:12px 22px;font-size:14.5px}
+.landing-hero-art{display:flex;align-items:center;justify-content:center}
+.landing-hero-art img{width:min(220px,80%);filter:drop-shadow(var(--shadow-md))}
+@media (max-width:760px){.landing-hero{grid-template-columns:1fr}.landing-hero-art{order:-1;max-width:140px;margin:0 auto}}
+
+.landing-features{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
+  max-width:1100px;margin:0 auto;padding:0 clamp(16px,4vw,48px) clamp(40px,6vw,64px);
+}
+@media (max-width:760px){.landing-features{grid-template-columns:1fr}}
+.landing-feature{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
+.landing-feature-icon{
+  width:34px;height:34px;border-radius:9px;background:var(--orange-100);color:var(--orange-700);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-family:Montserrat,sans-serif;font-size:14px;
+}
+.landing-feature h3{margin-top:14px;font-size:15.5px}
+.landing-feature p{margin-top:8px;font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+
+.landing-programmes{background:var(--bg-deep);padding:clamp(40px,6vw,64px) clamp(16px,4vw,48px)}
+.landing-programmes h2{max-width:1100px;margin:0 auto 24px;font-size:24px;color:var(--blue-900)}
+.landing-programme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px;margin:0 auto}
+@media (max-width:760px){.landing-programme-grid{grid-template-columns:1fr}}
+.landing-programme-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;border-top:3px solid var(--blue-700)}
+.landing-programme-card h3{font-size:15px;color:var(--blue-900)}
+.landing-programme-card p{margin-top:8px;font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+
+.landing-cta-band{
+  text-align:center;padding:clamp(48px,7vw,72px) 16px;
+  background:var(--blue-900);
+}
+.landing-cta-band h2{color:#fff;font-size:24px}
+.landing-cta-band p{color:#C7D4E8;margin-top:10px;font-size:14px}
+.landing-cta-band .btn{margin-top:22px;padding:12px 26px;font-size:14.5px}
+
+.landing-footer{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;
+  padding:24px clamp(16px,4vw,48px);background:var(--blue-900);border-top:1px solid rgba(255,255,255,.1);
+}
+.landing-footer-brand{display:flex;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:13px;font-family:Montserrat,sans-serif}
+.landing-footer-brand img{width:22px;height:22px}
+.landing-footer-links{display:flex;flex-wrap:wrap;gap:16px}
+.landing-footer-links a{color:#B9CBE8;text-decoration:none;font-size:12.5px}
+.landing-footer-links a:hover{color:#fff}
+.landing-footer-copy{color:#8CA2C4;font-size:12px;width:100%;text-align:center;order:3}
+@media (min-width:760px){.landing-footer-copy{width:auto;text-align:right;order:0}}

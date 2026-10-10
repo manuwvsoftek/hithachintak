@@ -48,7 +48,7 @@ If we ask for your personal information for a secondary reason, like marketing, 
 <div class="col-md-2">  
 </div>
 <div class="row-actions" style="margin-top:18px">
-    <a class="btn btn-ghost btn-sm" href="<?= site_url('login') ?>">Back to Sign in</a>
+    <a class="btn btn-ghost btn-sm" href="<?= site_url('/') ?>">Back</a>
   </div>
 
 

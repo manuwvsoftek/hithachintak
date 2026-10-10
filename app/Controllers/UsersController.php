@@ -152,6 +152,21 @@ class UsersController extends BaseController
     }
 
       /**
+     * Edit and Block are further narrowed to the account's own creator
+     * for every non-globally-scoped role (Pranta/Kshetra/Vibhag/Jila/
+     * Prakhand Admin) — they can still see a user another admin added
+     * within their own shared location (visibleTo() already covers
+     * that), just not change or block one they didn't create themselves.
+     * Super Admin/Dev Admin are exempt, same as everywhere else in this
+     * controller. Password actions (view/reset) are deliberately NOT
+     * gated by this — only Edit and Block are.
+     */
+    private function isOwnCreation(User $actor, User $target): bool
+    {
+        return $actor->hasGlobalAccess() || (int) $target->created_by === $actor->id;
+    }
+
+      /**
      * The Prant the user being created/edited belongs to, from the actor's
      * point of view. A globally-scoped actor (or a Pranta Admin with
      * "All Prants") picks from the full list; a Pranta Admin with more
@@ -383,7 +398,7 @@ class UsersController extends BaseController
 
         $actor  = $this->currentUser();
         $target = $this->manageableTarget($actor, $id);
-        if (! $target) {
+        if (! $target  || ! $this->isOwnCreation($actor, $target)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
          $prants = (new PrantModel())->orderBy('name', 'ASC')->findAll();
@@ -418,7 +433,7 @@ class UsersController extends BaseController
         $actor  = $this->currentUser();
     
         $target = $this->manageableTarget($actor, $id);
-        if (! $target) {
+        if (! $target || ! $this->isOwnCreation($actor, $target)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
@@ -485,7 +500,7 @@ class UsersController extends BaseController
 
         $actor  = $this->currentUser();
         $target = $this->manageableTarget($actor, $id);
-        if (! $target) {
+        if (! $target || ! $this->isOwnCreation($actor, $target)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 

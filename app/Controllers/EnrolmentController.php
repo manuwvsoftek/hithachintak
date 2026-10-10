@@ -255,11 +255,15 @@ class EnrolmentController extends BaseController
         $programmes = (new ProgrammeModel())->active();
         $selfFirstName = '';
         $selfLastName  = '';
+        $selfFullName = '';
         if ($forceSelf) {
             $programmes = array_values(array_filter($programmes, static fn ($p) => $p['code'] === 'hc'));
             $nameParts     = explode(' ', trim($actor->name), 2);
             $selfFirstName = $nameParts[0] ?? '';
             $selfLastName  = $nameParts[1] ?? '';
+            $selfFirstName = $selfFirstName. ' ' . $selfLastName;
+            $selfFullName = trim($actor->name);
+
         }
 
         return view('enrolments/new', [
@@ -275,6 +279,7 @@ class EnrolmentController extends BaseController
             'forceSelf'         => $forceSelf,
             'selfFirstName'     => $selfFirstName,
             'selfLastName'      => $selfLastName,
+            'selfFullName'      => $selfFullName,
             'selfPhone'         => $actor->phone,
             // Lets a quick-launch link (the PWA's home-screen shortcut,
             // the Karyakarta home screen's own button) jump straight past

@@ -6,8 +6,8 @@ use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
 
-$routes->get('/', static fn () => redirect()->to('/login'));
-
+//$routes->get('/', static fn () => redirect()->to('/login'));
+$routes->get('/', 'PagesController::landing');
 // --- Auth ---------------------------------------------------------
 $routes->get('login', 'AuthController::showLogin');
 $routes->post('login', 'AuthController::login');

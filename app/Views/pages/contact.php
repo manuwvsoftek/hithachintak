@@ -68,7 +68,7 @@
   <?php endif; ?>
 
   <div class="row-actions" style="margin-top:18px">
-    <a class="btn btn-ghost btn-sm" href="<?= site_url('login') ?>">Back to Sign in</a>
+    <a class="btn btn-ghost btn-sm" href="<?= site_url('/') ?>">Back</a>
   </div>
 </div>
 

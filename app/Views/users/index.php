@@ -74,7 +74,16 @@
           <td><span class="pill <?= status_pill_class($u->status) ?>"><?= esc(ucfirst($u->status)) ?></span></td>
           <td>
             <?php if ($u->id !== $currentUserId && $actor->outranks($u->role)): ?>
+            <?php
+              // Edit/Block are narrowed to the account's own creator for
+              // every non-globally-scoped role — see
+              // UsersController::isOwnCreation(). Everyone in scope can
+              // still see this row and look up its password; only the
+              // admin who actually created it can change or block it.
+              $canManage = $actor->hasGlobalAccess() || (int) $u->created_by === (int) $actor->id;
+            ?>
             <div class="row-actions">
+              <?php if ($canManage): ?>
               <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/edit') ?>">Edit</a>
               <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/password') ?>">Password</a>
               <form action="<?= site_url('admin/users/' . $u->id . '/block') ?>" method="post">
@@ -83,6 +92,7 @@
                   <?= $u->status === 'blocked' ? 'Unblock' : 'Block' ?>
                 </button>
               </form>
+              <?php endif; ?>
             </div>
             <?php endif; ?>
           </td>

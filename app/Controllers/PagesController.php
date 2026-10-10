@@ -14,6 +14,10 @@ use App\Models\PrantModel;
  */
 class PagesController extends BaseController
 {
+     public function landing()
+    {
+        return view('pages/landing', ['title' => 'Hithachintak Abhiyan']);
+    }
     public function about()
     {
         return view('pages/about', ['title' => 'About this platform']);
