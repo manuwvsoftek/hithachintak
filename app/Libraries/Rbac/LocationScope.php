@@ -22,10 +22,18 @@ use App\Models\UserPrantScopeModel;
  */
 class LocationScope
 {
-    /** @return list<int>|null */
+     /**
+     * Kshetra Admin reuses this exact same mechanism as a multi-Prant
+     * Pranta Admin — it isn't a new location tier of its own, just a role
+     * that outranks Pranta Admin and is assigned a set of Prants the same
+     * way (see User::ROLE_RANK's comment).
+     *
+     * @return list<int>|null
+     */
+    
     public static function prantIds(User $actor): ?array
     {
-        if ($actor->role !== User::ROLE_PRANTA_ADMIN) {
+        if (! in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             return $actor->prant_id ? [$actor->prant_id] : null;
         }
         if ($actor->scope_all) {

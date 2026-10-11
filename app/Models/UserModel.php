@@ -27,7 +27,7 @@ class UserModel extends Model
     protected $validationRules = [
         'name'  => 'required|min_length[2]|max_length[150]',
         'phone' => 'required|regex_match[/^[6-9][0-9]{9}$/]|is_unique[users.phone,id,{id}]',
-        'role'  => 'required|in_list[dev_admin,super_admin,pranta_admin,sub_admin,prakhand_admin,karyakarta]',
+        'role'  => 'required|in_list[dev_admin,super_admin,pranta_admin,sub_admin,prakhand_admin,karyakarta,kendreeya_admin]',
         'email' => 'permit_empty|valid_email',
          'dob'   => 'permit_empty|valid_date[Y-m-d]',
     ];
@@ -69,17 +69,17 @@ class UserModel extends Model
             return $builder;
         }
 
-        // Qualified with the table — the User Directory query joins
+       // Qualified with the table — the User Directory query joins
         // `prakhands` for its display name column, which carries its own
         // jila_id, so an unqualified where() here is ambiguous once that
         // join is present.
-        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
+        if (in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             $ids = LocationScope::prantIds($actor);
 
             return $ids === null ? $builder : $builder->whereIn('users.prant_id', $ids);
         }
 
-        if ($actor->role === User::ROLE_SUB_ADMIN) {
+       if ($actor->role === User::ROLE_SUB_ADMIN) {
             $ids = LocationScope::jilaIds($actor);
 
             return $ids === null ? $builder : $builder->whereIn('users.jila_id', $ids);

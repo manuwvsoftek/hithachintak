@@ -33,15 +33,19 @@ class RolePermissionSeeder extends Seeder
             'Settings & Integrations',
         ];
 
-        $roles = ['dev_admin', 'super_admin', 'pranta_admin', 'sub_admin', 'prakhand_admin', 'karyakarta'];
+        // Kshetra Admin mirrors Pranta Admin's levels exactly (it's that
+        // same role's permission shape, just scoped to a set of Prants
+        // instead of one); Vibhag Admin mirrors Sub Admin (Jila Admin)
+        // the same way, one tier down — see User::ROLE_RANK's comment.
+        $roles = ['dev_admin', 'super_admin', 'kshetra_admin', 'pranta_admin', 'vibhag_admin', 'sub_admin', 'prakhand_admin', 'karyakarta'];
 
         $matrix = [
-            'Dashboard'                => ['Full', 'Full', 'Full', 'View', 'View', 'Own'],
-            'Masters'                  => ['Full', 'Full', 'Edit', 'View', 'None', 'None'],
-            'Users & Hierarchy'        => ['Full', 'Full', 'Edit', 'Edit', 'Edit', 'None'],
-            'Enrolments'               => ['Full', 'Full', 'Full', 'Edit', 'Edit', 'Own'],
-            'Reports'                  => ['Full', 'Full', 'View', 'View', 'View', 'None'],
-            'Settings & Integrations'  => ['Full', 'None', 'None', 'None', 'None', 'None'],
+            'Dashboard'                => ['Full', 'Full', 'Full', 'Full', 'View', 'View', 'View', 'Own'],
+            'Masters'                  => ['Full', 'Full', 'Edit', 'Edit', 'View', 'View', 'None', 'None'],
+            'Users & Hierarchy'        => ['Full', 'Full', 'Edit', 'Edit', 'Edit', 'Edit', 'Edit', 'None'],
+            'Enrolments'               => ['Full', 'Full', 'Full', 'Full', 'Edit', 'Edit', 'Edit', 'Own'],
+            'Reports'                  => ['Full', 'Full', 'View', 'View', 'View', 'View', 'View', 'None'],
+            'Settings & Integrations'  => ['Full', 'None', 'None', 'None', 'None', 'None', 'None', 'None'],
         ];
 
         $db  = db_connect();

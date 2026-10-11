@@ -23,12 +23,18 @@
 
 <?php if (current_permission_level('Users & Hierarchy') === 'Edit' || current_permission_level('Users & Hierarchy') === 'Full'): ?>
 <?php
-  // How deep a role needs the location picker to go: 0 = Prant only,
+ // How deep a role needs the location picker to go: 0 = Prant only,
   // 1 = + Jila, 2 = + Prakhand. Drives which fields the role select
   // shows/hides below (only meaningful for Super Admin, whose
   // manageable-role list spans every depth — every other actor's
   // manageable roles all need at least as much as their own fixed scope).
+  // Kshetra Admin is assigned a set of Prants, same tier/depth as Pranta
+  // Admin; Vibhag Admin is assigned a set of Jilas, same tier/depth as
+  // Jila Admin (Sub Admin) — neither is a new location tier of its own
+  // (see User::ROLE_RANK's comment), so they slot into this exact same
+  // depth/own-tier shape, one role apart from the one they outrank.
   $locDepth = [
+      \App\Entities\User::ROLE_KENDREEYA_ADMIN  => 0,
       \App\Entities\User::ROLE_PRANTA_ADMIN   => 0,
       \App\Entities\User::ROLE_SUB_ADMIN      => 1,
       \App\Entities\User::ROLE_PRAKHAND_ADMIN => 2,
@@ -38,6 +44,7 @@
   // multi-select + "All" toggle instead of a single picker. Karyakarta
   // has no own tier here (its location is always a single fixed value).
   $ownTier = [
+      \App\Entities\User::ROLE_KENDREEYA_ADMIN => 0,
       \App\Entities\User::ROLE_PRANTA_ADMIN   => 0,
       \App\Entities\User::ROLE_SUB_ADMIN      => 1,
       \App\Entities\User::ROLE_PRAKHAND_ADMIN => 2,
@@ -63,14 +70,14 @@
   </form>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Prakhand</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Location</th><th>Status</th><th></th></tr></thead>
       <tbody>
       <?php foreach ($users as $u): ?>
         <tr>
           <td><?= esc($u->name) ?></td>
           <td class="num"><?= esc(mask_phone($u->phone)) ?></td>
           <td><?= esc($roleLabels[$u->role] ?? $u->role) ?></td>
-          <td><?= esc($u->prakhand_name ?? '—') ?></td>
+          <td><?= esc($locationLabels[$u->id] ?? '—') ?></td>
           <td><span class="pill <?= status_pill_class($u->status) ?>"><?= esc(ucfirst($u->status)) ?></span></td>
           <td>
             <?php if ($u->id !== $currentUserId && $actor->outranks($u->role)): ?>
@@ -200,7 +207,7 @@
             <input type="checkbox" name="prakhand_scope_all" value="1" style="width:auto" data-prakhand-all> All Prakhands in this Jila
           </label>
         </div>
-      <?php elseif (in_array($actor->role, ['pranta_admin'], true)): ?>
+      <?php elseif (in_array($actor->role, ['pranta_admin', 'kendreeya_admin'], true)): ?>
         <?php if ($actorPrants !== null): ?>
           <div class="field"><label class="f-label">Prant</label>
             <select class="f-input" name="prant_id" data-prant-select>

@@ -30,9 +30,11 @@ class UsersController extends BaseController
         $userModel = new UserModel();
         $actor     = $this->currentUser();
 
-        $query = $userModel->visibleTo($actor)
-            ->select('users.*, prakhands.name AS prakhand_name')
-            ->join('prakhands', 'prakhands.id = users.prakhand_id', 'left');
+       $query = $userModel->visibleTo($actor)
+            ->select('users.*, prakhands.name AS prakhand_name, jilas.name AS jila_name, prants.name AS prant_name')
+            ->join('prakhands', 'prakhands.id = users.prakhand_id', 'left')
+            ->join('jilas', 'jilas.id = users.jila_id', 'left')
+            ->join('prants', 'prants.id = users.prant_id', 'left');
         if ($role = $this->request->getGet('role')) {
             $query->where('users.role', $role);
         }
@@ -45,6 +47,7 @@ class UsersController extends BaseController
         }
 
         $users = $query->orderBy('name', 'ASC')->findAll();
+        $locationLabels = $this->locationLabelsFor($users);
 
         // Dev Admin never appears here — not in the directory (already
         // excluded by visibleTo() itself), not in these hierarchy counts,
@@ -79,6 +82,7 @@ class UsersController extends BaseController
         return view('users/index', [
             'title'      => 'Users & Hierarchy',
             'users'      => $users,
+            'locationLabels' => $locationLabels,
             'hierarchy'  => $hierarchy,
             'prants'     => $prants,
             'actorPrants' => $this->actorPrantOptions($actor, $prants),
@@ -92,6 +96,69 @@ class UsersController extends BaseController
             'resumeDraft'    => $resumeDraft,
             'ayams'       => self::AYAMS,
         ]);
+    }
+
+     /**
+     * The directory table has one "location" cell per row, but what belongs
+     * in it depends on the row's own role's tier — a Pranta/Kshetra Admin's
+     * is their Prant(s), a Jila/Vibhag Admin's is their Jila(s), a Prakhand
+     * Admin's (and a Karyakarta's) is their Prakhand. Single-value roles
+     * read straight off the row's own joined name column; a role that can
+     * hold more than one (scope_all, or more than one row in its junction
+     * table) needs one batched count query per tier instead of an N+1 — so
+     * this runs once per index() call across every visible row, not once
+     * per row.
+     *
+     * @param list<User> $users
+     *
+     * @return array<int, string>
+     */
+    private function locationLabelsFor(array $users): array
+    {
+        $userIds = array_map(static fn (User $u) => $u->id, $users);
+        if (! $userIds) {
+            return [];
+        }
+
+        $countsFor = static function (string $modelClass, string $column) use ($userIds): array {
+            $rows = (new $modelClass())
+                ->select("user_id, COUNT(*) AS c")
+                ->whereIn('user_id', $userIds)
+                ->groupBy('user_id')
+                ->findAll();
+
+            return array_column($rows, 'c', 'user_id');
+        };
+        $prantCounts    = $countsFor(UserPrantScopeModel::class, 'prant_id');
+        $jilaCounts     = $countsFor(UserJilaScopeModel::class, 'jila_id');
+        $prakhandCounts = $countsFor(UserPrakhandScopeModel::class, 'prakhand_id');
+
+        $labels = [];
+        foreach ($users as $u) {
+            if (in_array($u->role, [User::ROLE_KENDREEYA_ADMIN, User::ROLE_PRANTA_ADMIN], true)) {
+                $labels[$u->id] = $this->tierLabel($u->scope_all, (int) ($prantCounts[$u->id] ?? 0), $u->prant_name, 'All Prants');
+            } elseif ($u->role === User::ROLE_SUB_ADMIN) {
+                $labels[$u->id] = $this->tierLabel($u->scope_all, (int) ($jilaCounts[$u->id] ?? 0), $u->jila_name, 'All Jilas in ' . ($u->prant_name ?? '—'));
+            } elseif ($u->role === User::ROLE_PRAKHAND_ADMIN) {
+                $labels[$u->id] = $this->tierLabel($u->scope_all, (int) ($prakhandCounts[$u->id] ?? 0), $u->prakhand_name, 'All Prakhands in ' . ($u->jila_name ?? '—'));
+            } else {
+                // Karyakarta — single fixed Prakhand, same as before this
+                // column covered the other roles too.
+                $labels[$u->id] = $u->prakhand_name ?? '—';
+            }
+        }
+
+        return $labels;
+    }
+
+    private function tierLabel(bool $scopeAll, int $multiCount, ?string $oneName, string $allLabel): string
+    {
+        if ($scopeAll) {
+            return $allLabel;
+        }
+        $name = $oneName ?? '—';
+
+        return $multiCount > 1 ? $name . ' +' . ($multiCount - 1) . ' more' : $name;
     }
 
     /**
@@ -113,19 +180,20 @@ class UsersController extends BaseController
         ));
     }
 
-    /**
-     * A Pranta Admin assigned to more than one Prant (multi-select, or
-     * "All Prants") needs a picker on the New/Edit User forms instead of
-     * the usual fixed "your Prant" text — this is that option list, or
-     * null when a fixed single Prant is enough (every other actor, and a
-     * Pranta Admin assigned to exactly one Prant).
+     /**
+     * A Pranta Admin (or Kendreeya Admin, which is assigned a set of Prants
+     * the same way — see LocationScope::prantIds()) assigned to more than
+     * one Prant (multi-select, or "All Prants") needs a picker on the
+     * New/Edit User forms instead of the usual fixed "your Prant" text —
+     * this is that option list, or null when a fixed single Prant is
+     * enough (every other actor, and one assigned to exactly one Prant).
      *
      * @param list<array<string, mixed>> $allPrants every Prant, already loaded by the caller
      * @return list<array<string, mixed>>|null
      */
     private function actorPrantOptions(User $actor, array $allPrants): ?array
     {
-        if ($actor->role !== User::ROLE_PRANTA_ADMIN) {
+        if (! in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             return null;
         }
 
@@ -139,6 +207,9 @@ class UsersController extends BaseController
 
         return array_values(array_filter($allPrants, static fn ($p) => in_array((int) $p['id'], $ids, true)));
     }
+
+
+    
 
     /** Loads a target user, but only if $actor is allowed to manage them (in-scope and outranked). Returns null otherwise. */
     private function manageableTarget(User $actor, int $id): ?User
@@ -185,7 +256,7 @@ class UsersController extends BaseController
             return $posted;
         }
 
-        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
+        if (in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             $allowedIds = LocationScope::prantIds($actor);
             if ($allowedIds === null) {
                 return $posted; // scope_all — any Prant is fair game
@@ -197,6 +268,30 @@ class UsersController extends BaseController
 
         return $actor->prant_id;
     }
+
+      /**
+     * The Jila a user being created/edited belongs to — mirrors
+     * resolveActorPrantId() one tier down. A Jila Admin (Sub Admin) or
+     * Prakhand Admin actor is fixed to their own single Jila (trusted,
+     * never the raw POST value). A Vibhag Admin actor picks from their
+     * own assigned Jila set, with the same "the posted value must
+     * actually be one of their own" guard. Every other actor (global
+     * access, Pranta Admin, Kshetra Admin) picks freely from POST — their
+     * own fixed context is the Prant tier, not Jila, so the cascading
+     * Jila dropdown (scoped to whatever Prant was already resolved)
+     * already constrains them in practice.
+     */
+    private function resolveActorJilaId(User $actor): ?int
+    {
+        $posted = $this->request->getPost('jila_id') ? (int) $this->request->getPost('jila_id') : null;
+
+        if (in_array($actor->role, [User::ROLE_SUB_ADMIN, User::ROLE_PRAKHAND_ADMIN], true)) {
+            return $actor->jila_id;
+        }
+
+        return $posted;
+    }
+
 
     /**
      * Prant/Jila/Prakhand for a user $actor is creating or editing.
@@ -217,14 +312,16 @@ class UsersController extends BaseController
     private function resolveLocationFields(User $actor): array
     {
         $role = (string) $this->request->getPost('role');
+        $prantId = $this->resolveActorPrantId($actor);
+        $jilaId  = $this->resolveActorJilaId($actor);
 
-        $prantId = $actor->hasGlobalAccess()
-            ? ($this->request->getPost('prant_id') ? (int) $this->request->getPost('prant_id') : null)
-            : $actor->prant_id;
+        // $prantId = $actor->hasGlobalAccess()
+        //     ? ($this->request->getPost('prant_id') ? (int) $this->request->getPost('prant_id') : null)
+        //     : $actor->prant_id;
 
-        $jilaId = in_array($actor->role, [User::ROLE_SUB_ADMIN, User::ROLE_PRAKHAND_ADMIN], true)
-            ? $actor->jila_id
-            : ($this->request->getPost('jila_id') ? (int) $this->request->getPost('jila_id') : null);
+        // $jilaId = in_array($actor->role, [User::ROLE_SUB_ADMIN, User::ROLE_PRAKHAND_ADMIN], true)
+        //     ? $actor->jila_id
+        //     : ($this->request->getPost('jila_id') ? (int) $this->request->getPost('jila_id') : null);
 
         $prakhandId = $actor->role === User::ROLE_PRAKHAND_ADMIN
             ? $actor->prakhand_id
@@ -235,7 +332,7 @@ class UsersController extends BaseController
         $jilaIds    = [];
         $prakhandIds = [];
 
-        if ($role === User::ROLE_PRANTA_ADMIN) {
+       if (in_array($role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             $scopeAll = (bool) $this->request->getPost('prant_scope_all');
             $prantIds = array_values(array_unique(array_map('intval', (array) $this->request->getPost('prant_ids'))));
             $prantId  = $prantIds[0] ?? $prantId;
@@ -274,8 +371,15 @@ class UsersController extends BaseController
             return null;
         }
 
-        if ($role === User::ROLE_PRANTA_ADMIN) {
-            return ($scopeAll || $prantIds) ? null : 'Select at least one Prant, or choose All Prants.';
+    // $prantIds/$jilaIds are only populated when the actor has a full
+        // multi-select field to submit from (Super Admin creating this
+        // role's own tier directly, or a higher actor assigning a role
+        // whose own tier matches theirs — see resolveLocationFields()).
+        // A Kendreeya Admin creating a Pranta Admin instead picks ONE of
+        // their own already-validated Prants via the single-picker path,
+        // which only ever resolves $prantId — so either form counts here.
+        if (in_array($role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
+            return ($scopeAll || $prantIds || $prantId) ? null : 'Select at least one Prant, or choose All Prants.';
         }
 
         if (! $prantId) {
@@ -283,7 +387,7 @@ class UsersController extends BaseController
         }
 
         if ($role === User::ROLE_SUB_ADMIN) {
-            return ($scopeAll || $jilaIds) ? null : 'Select at least one Jila, or choose All Jilas.';
+            return ($scopeAll || $jilaIds || $jilaId) ? null : 'Select at least one Jila, or choose All Jilas.';
         }
 
         if ($role === User::ROLE_PRAKHAND_ADMIN && ! $jilaId) {
@@ -304,8 +408,10 @@ class UsersController extends BaseController
      */
     private function persistLocationScopes(string $role, int $userId, array $prantIds, array $jilaIds, array $prakhandIds): void
     {
-        (new UserPrantScopeModel())->replaceFor($userId, $role === User::ROLE_PRANTA_ADMIN ? $prantIds : []);
-        (new UserJilaScopeModel())->replaceFor($userId, $role === User::ROLE_SUB_ADMIN ? $jilaIds : []);
+        // (new UserPrantScopeModel())->replaceFor($userId, $role === User::ROLE_PRANTA_ADMIN ? $prantIds : []);
+        // (new UserJilaScopeModel())->replaceFor($userId, $role === User::ROLE_SUB_ADMIN ? $jilaIds : []);
+         (new UserPrantScopeModel())->replaceFor($userId, in_array($role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true) ? $prantIds : []);
+         (new UserJilaScopeModel())->replaceFor($userId, $role === User::ROLE_SUB_ADMIN ? $jilaIds : []);
         (new UserPrakhandScopeModel())->replaceFor($userId, $role === User::ROLE_PRAKHAND_ADMIN ? $prakhandIds : []);
     }
 
@@ -438,8 +544,9 @@ class UsersController extends BaseController
         }
 
         $manageableRoles = $this->manageableRoles($actor);
-        $role = $actor->role;
-        $rules = [
+       // $role = $actor->role;
+       $role = (string) $this->request->getPost('role'); 
+       $rules = [
             'name'  => 'required|min_length[2]|max_length[150]',
             'phone' => "required|regex_match[/^[6-9][0-9]{9}\$/]|is_unique[users.phone,id,{$id}]",
             'role'  => 'required|in_list[' . implode(',', $manageableRoles) . ']',

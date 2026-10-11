@@ -7,13 +7,15 @@
 </div>
 
 <?php
-  $locDepth = [
+ $locDepth = [
+      \App\Entities\User::ROLE_KENDREEYA_ADMIN  => 0,
       \App\Entities\User::ROLE_PRANTA_ADMIN   => 0,
       \App\Entities\User::ROLE_SUB_ADMIN      => 1,
       \App\Entities\User::ROLE_PRAKHAND_ADMIN => 2,
       \App\Entities\User::ROLE_KARYAKARTA     => 2,
   ];
   $ownTier = [
+      \App\Entities\User::ROLE_KENDREEYA_ADMIN  => 0,
       \App\Entities\User::ROLE_PRANTA_ADMIN   => 0,
       \App\Entities\User::ROLE_SUB_ADMIN      => 1,
       \App\Entities\User::ROLE_PRAKHAND_ADMIN => 2,
@@ -95,8 +97,7 @@
             <input type="checkbox" name="prakhand_scope_all" value="1" style="width:auto" data-prakhand-all <?= $target->scope_all && $target->role === 'prakhand_admin' ? 'checked' : '' ?>> All Prakhands in this Jila
           </label>
         </div>
-      <?php elseif (in_array($actor->role, ['pranta_admin'], true)): ?>
-        <?php elseif (in_array($actor->role, ['pranta_admin'], true)): ?>
+      <?php elseif (in_array($actor->role, ['pranta_admin', 'kendreeya_admin'], true)): ?>
         <?php if ($actorPrants !== null): ?>
           <div class="field"><label class="f-label">Prant</label>
             <select class="f-input" name="prant_id" data-prant-select>
@@ -126,6 +127,26 @@
             <input type="checkbox" name="jila_scope_all" value="1" style="width:auto" data-jila-all <?= $target->scope_all && $target->role === 'sub_admin' ? 'checked' : '' ?>> All Jilas in your Prant
           </label>
         </div>
+         <div class="field" data-loc-level="2" data-variant="single"><label class="f-label">Prakhand</label>
+          <select class="f-input" name="prakhand_id" data-prakhand-select>
+            <option value="">—</option>
+            <?php foreach ($prakhands as $pr): ?>
+              <option value="<?= $pr['id'] ?>" <?= (int) $target->prakhand_id === (int) $pr['id'] ? 'selected' : '' ?>><?= esc($pr['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field" data-loc-level="2" data-variant="multi" hidden>
+          <label class="f-label">Prakhand(s)</label>
+          <div class="check-list" data-prakhand-multi>
+            <?php foreach ($prakhands as $pr): ?>
+              <label class="check-item"><input type="checkbox" name="prakhand_ids[]" value="<?= $pr['id'] ?>" <?= in_array((int) $pr['id'], $targetPrakhandIds, true) ? 'checked' : '' ?>> <?= esc($pr['name']) ?></label>
+            <?php endforeach; ?>
+          </div>
+          <label class="f-label" style="margin-top:6px;display:flex;align-items:center;gap:6px">
+            <input type="checkbox" name="prakhand_scope_all" value="1" style="width:auto" data-prakhand-all <?= $target->scope_all && $target->role === 'prakhand_admin' ? 'checked' : '' ?>> All Prakhands in this Jila
+          </label>
+        </div>
+         
         <div class="field" data-loc-level="2" data-variant="single"><label class="f-label">Prakhand</label>
           <select class="f-input" name="prakhand_id" data-prakhand-select>
             <option value="">—</option>

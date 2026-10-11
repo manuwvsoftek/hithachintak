@@ -10,6 +10,7 @@ class User extends Entity
 {
     public const ROLE_DEV_ADMIN    = 'dev_admin';
     public const ROLE_SUPER_ADMIN    = 'super_admin';
+    public const ROLE_KENDREEYA_ADMIN = 'kendreeya_admin';
     public const ROLE_PRANTA_ADMIN   = 'pranta_admin';
     public const ROLE_SUB_ADMIN      = 'sub_admin';
     public const ROLE_PRAKHAND_ADMIN = 'prakhand_admin';
@@ -18,16 +19,27 @@ class User extends Entity
     public const ROLE_LABELS = [
         self::ROLE_DEV_ADMIN      => 'Dev Admin',
         self::ROLE_SUPER_ADMIN    => 'Super Admin',
+        self::ROLE_KENDREEYA_ADMIN => 'Kendreeya Admin',
         self::ROLE_PRANTA_ADMIN   => 'Pranta Admin',
         self::ROLE_SUB_ADMIN      => 'Jila Admin',
         self::ROLE_PRAKHAND_ADMIN => 'Prakhand Admin',
         self::ROLE_KARYAKARTA     => 'Karyakarta',
     ];
 
-    /**
+   /**
      * Higher rank = more authority. Used to stop a role managing its peers
      * or superiors. Mirrors the location hierarchy one level deeper than
      * before: Prant -> Jila -> Prakhand -> the Karyakarta themself.
+     *
+     * Kshetra Admin and Vibhag Admin don't introduce new location tiers
+     * of their own — a Kshetra Admin is simply assigned a set of Prants
+     * (exactly the same user_prant_scopes mechanism a multi-Prant Pranta
+     * Admin already uses — see LocationScope::prantIds()), just outranking
+     * Pranta Admin so it can create/manage them; a Vibhag Admin is
+     * assigned a set of Jilas the same way (LocationScope::jilaIds()),
+     * outranking Jila Admin (Sub Admin) for the same reason. Sub Admin,
+     * Prakhand Admin and Karyakarta keep their original rank numbers
+     * unchanged — only new values were inserted above them.
      *
      * Dev Admin sits above Super Admin here — it has every module Super
      * Admin has (see RolePermissionSeeder), plus Settings & Integrations
@@ -39,12 +51,13 @@ class User extends Entity
      * Super Admin is provisioned only via DevSuperAdminSeeder.
      */
     public const ROLE_RANK = [
-        self::ROLE_DEV_ADMIN      => 5,
-        self::ROLE_SUPER_ADMIN    => 4,
-        self::ROLE_PRANTA_ADMIN   => 3,
-        self::ROLE_SUB_ADMIN      => 2,
-        self::ROLE_PRAKHAND_ADMIN => 1,
-        self::ROLE_KARYAKARTA     => 0,
+        self::ROLE_DEV_ADMIN       => 6,
+        self::ROLE_SUPER_ADMIN     => 5,
+        self::ROLE_KENDREEYA_ADMIN => 4,
+        self::ROLE_PRANTA_ADMIN    => 3,
+        self::ROLE_SUB_ADMIN       => 2,
+        self::ROLE_PRAKHAND_ADMIN  => 1,
+        self::ROLE_KARYAKARTA      => 0,
     ];
 
     public static function rank(string $role): int

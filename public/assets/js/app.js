@@ -228,7 +228,7 @@
 
     var role = roleSelect.value;
 
-    var showAyam = role === 'karyakarta' || role === 'sub_admin' || role === 'prakhand_admin' || role === 'pranta_admin';
+    var showAyam = role === 'karyakarta' || role === 'sub_admin' || role === 'prakhand_admin' || role === 'pranta_admin' || role === 'kendreeya_admin';
 
     ayamField.hidden = !showAyam;
     ayamSelect.disabled = !showAyam;
@@ -241,7 +241,7 @@
   function applyKaryakartaFields() {
     if (!roleSelect) return;
 
-    var isKaryakarta = roleSelect.value === 'karyakarta' || roleSelect.value === 'sub_admin' || roleSelect.value === 'prakhand_admin' || roleSelect.value === 'pranta_admin';
+    var isKaryakarta = roleSelect.value === 'karyakarta' || roleSelect.value === 'sub_admin' || roleSelect.value === 'prakhand_admin' || roleSelect.value === 'pranta_admin' || roleSelect.value === 'kendreeya_admin';
 
     karyakartaFields.forEach(function (field) {
         field.hidden = !isKaryakarta;
@@ -304,10 +304,10 @@
         var dobInput = form.querySelector('#dob');
         var ayamSelectEl = form.querySelector('#ayamSelect');
         if (dobInput && !dobInput.value) {
-          markInvalid(dobInput, 'Date of birth is required for a Karyakarta.');
+          markInvalid(dobInput, 'Date of birth is required.');
         }
         if (ayamSelectEl && !ayamSelectEl.value) {
-          markInvalid(ayamSelectEl, 'Ayam is required for a Karyakarta.');
+          markInvalid(ayamSelectEl, 'Ayam is required.');
         }
       }
 

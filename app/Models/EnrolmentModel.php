@@ -45,7 +45,7 @@ class EnrolmentModel extends Model
         // LocationScope handles the None-vs-set-vs-single distinction for
         // a role that's been assigned multiple (or "all") of its own
         // tier — null means unrestricted at that tier, skip the where().
-        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
+         if (in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             $ids = LocationScope::prantIds($actor);
 
             return $ids === null ? $builder : $builder->whereIn('enrolments.prant_id', $ids);

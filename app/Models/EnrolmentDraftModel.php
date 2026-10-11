@@ -40,13 +40,13 @@ class EnrolmentDraftModel extends Model
             return $builder;
         }
 
-        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
+       if (in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             $ids = LocationScope::prantIds($actor);
 
             return $ids === null ? $builder : $builder->whereIn('enrolment_drafts.prant_id', $ids);
         }
 
-        if ($actor->role === User::ROLE_SUB_ADMIN) {
+       if ($actor->role === User::ROLE_SUB_ADMIN) {
             $ids = LocationScope::jilaIds($actor);
 
             return $ids === null ? $builder : $builder->whereIn('enrolment_drafts.jila_id', $ids);

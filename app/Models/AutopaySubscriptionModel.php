@@ -51,7 +51,7 @@ class AutopaySubscriptionModel extends Model
             return $this;
         }
 
-        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
+        if (in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
             $ids = LocationScope::prantIds($actor);
 
             return $ids === null ? $this : $this->whereIn('autopay_subscriptions.prant_id', $ids);

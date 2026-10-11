@@ -15,9 +15,17 @@ class UserJilaScopeModel extends Model
     protected $useTimestamps = false;
     protected $allowedFields = ['user_id', 'jila_id', 'created_at'];
 
+     /**
+     * Cast to int: MySQLi returns every column as a string unless
+     * numberNative is on (it isn't — see Config\Database), and callers
+     * (LocationScope, the Edit User view's in_array(..., true) checks)
+     * rely on this returning real ints, not numeric strings.
+     *
+     * @return list<int>
+     */
     public function idsFor(int $userId): array
     {
-        return array_column($this->where('user_id', $userId)->findAll(), 'jila_id');
+        return array_map('intval',array_column($this->where('user_id', $userId)->findAll(), 'jila_id'));
     }
 
     public function replaceFor(int $userId, array $jilaIds): void
