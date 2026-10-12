@@ -203,6 +203,19 @@ tbody td{padding:10px 12px;border-bottom:1px solid var(--border-soft);color:var(
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover{background:var(--surface-alt)}
 
+/* CI4's Pager default_full template — plain <ul class="pagination"> with
+   no styling of its own, which without this renders as a bare, vertical
+   bulleted list. Page numbers are already bounded by the Pager itself
+   (setSurroundCount(2): First/Previous, a small window around the
+   current page, Next/Last) regardless of total page count, so this only
+   needs to lay that fixed-size row out horizontally — it never has to
+   handle rendering hundreds of links at once. */
+.pagination{display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none;margin:0;padding:0}
+.pagination li{display:flex}
+.pagination a{display:flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--ink-soft);font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.pagination a:hover{background:var(--surface-alt);color:var(--ink);border-color:var(--border-soft)}
+.pagination li.active a{background:var(--blue-700);border-color:var(--blue-700);color:#fff}
+
 .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600}
 .pill-green{background:var(--green-100);color:var(--green-600)}
 .pill-amber{background:var(--amber-100);color:var(--amber-600)}
