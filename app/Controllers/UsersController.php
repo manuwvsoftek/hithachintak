@@ -9,9 +9,11 @@ use App\Libraries\Msg91\Msg91Sms;
 use App\Libraries\Rbac\LocationScope;
 use App\Libraries\Secrets\Vault;
 use App\Models\AuditLogModel;
+use App\Models\EnrolmentModel;
 use App\Models\JilaModel;
 use App\Models\PrakhandModel;
 use App\Models\PrantModel;
+use App\Models\ProgrammeModel;
 use App\Models\UserDraftModel;
 use App\Models\UserJilaScopeModel;
 use App\Models\UserModel;
@@ -812,6 +814,55 @@ class UsersController extends BaseController
             'title'    => 'View Password',
             'target'   => $target,
             'password' => $password,
+        ]);
+    }
+
+     /**
+     * Who this account created, and how much Hithachintak those created
+     * accounts have since brought in themselves — a rollup reachable from
+     * the User Directory search, same visibility floor as Password (must
+     * outrank the target's role; not further narrowed to creator-or-above
+     * the way Edit/Block are, since this is read-only).
+     */
+    public function activity($id)
+    {
+        $id = (int) $id;
+
+        $actor  = $this->currentUser();
+        $target = $this->manageableTarget($actor, $id);
+        if (! $target) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $createdUsers = (new UserModel())->where('created_by', $id)->orderBy('name', 'ASC')->findAll();
+
+        // "Done" means receipted — otp_pending/awaiting_payment rows
+        // never collected anything, so they don't count here.
+        $hcProgramme   = (new ProgrammeModel())->byCode('hc');
+        $hcCountByUser = [];
+        $totalHc       = 0;
+        $createdUserIds = array_map(static fn (User $u) => $u->id, $createdUsers);
+        if ($createdUserIds && $hcProgramme) {
+            $rows = (new EnrolmentModel())
+                ->select('collected_by_user_id, COUNT(*) AS c')
+                ->where('programme_id', $hcProgramme['id'])
+                ->where('receipt_no IS NOT NULL')
+                ->whereIn('collected_by_user_id', $createdUserIds)
+                ->groupBy('collected_by_user_id')
+                ->findAll();
+            foreach ($rows as $r) {
+                $hcCountByUser[(int) $r->collected_by_user_id] = (int) $r->c;
+                $totalHc += (int) $r->c;
+            }
+        }
+
+        return view('users/activity', [
+            'title'         => 'Activity — ' . $target->name,
+            'target'        => $target,
+            'roleLabels'    => User::ROLE_LABELS,
+            'createdUsers'  => $createdUsers,
+            'hcCountByUser' => $hcCountByUser,
+            'totalHc'       => $totalHc,
         ]);
     }
 

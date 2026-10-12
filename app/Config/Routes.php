@@ -96,6 +96,7 @@ $routes->group('admin', ['filter' => 'authGuard'], static function ($routes) {
         $routes->post('(:num)/block', 'UsersController::toggleBlock/$1', ['filter' => 'permission:Users & Hierarchy,Edit']);
         $routes->post('(:num)/reset-password', 'UsersController::resetPassword/$1', ['filter' => 'permission:Users & Hierarchy,Edit']);
         $routes->get('(:num)/password', 'UsersController::viewPassword/$1', ['filter' => 'permission:Users & Hierarchy,Edit']);
+        $routes->get('(:num)/activity', 'UsersController::activity/$1', ['filter' => 'permission:Users & Hierarchy,Edit']);
     });
 
     $routes->group('enrolments', ['filter' => 'permission:Enrolments,Own'], static function ($routes) {
