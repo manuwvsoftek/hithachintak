@@ -34,7 +34,8 @@ class UsersController extends BaseController
             ->select('users.*, prakhands.name AS prakhand_name, jilas.name AS jila_name, prants.name AS prant_name')
             ->join('prakhands', 'prakhands.id = users.prakhand_id', 'left')
             ->join('jilas', 'jilas.id = users.jila_id', 'left')
-            ->join('prants', 'prants.id = users.prant_id', 'left');
+            ->join('prants', 'prants.id = users.prant_id', 'left')
+            ->join('users creators', 'creators.id = users.created_by', 'left');
         if ($role = $this->request->getGet('role')) {
             $query->where('users.role', $role);
         }
@@ -48,6 +49,7 @@ class UsersController extends BaseController
 
         $users = $query->orderBy('name', 'ASC')->findAll();
         $locationLabels = $this->locationLabelsFor($users);
+        $canManageMap   = $this->canManageMap($actor, $users);
 
         // Dev Admin never appears here — not in the directory (already
         // excluded by visibleTo() itself), not in these hierarchy counts,
@@ -86,6 +88,7 @@ class UsersController extends BaseController
             'draftCount' => $this->draftCount($actor),
             'pager'      => $userModel->pager,
             'locationLabels' => $locationLabels,
+            'canManageMap' => $canManageMap,
             'hierarchy'  => $hierarchy,
             'prants'     => $prants,
             'actorPrants' => $this->actorPrantOptions($actor, $prants),
@@ -238,6 +241,34 @@ class UsersController extends BaseController
         return $labels;
     }
 
+      /**
+     * Whether $actor can Edit/Block each row — same rule as
+     * isOwnCreation(), computed once per visible page of the directory
+     * instead of a lookup per row (the row's own joined creator_role
+     * column already carries what isOwnCreation() would otherwise fetch
+     * with a query of its own).
+     *
+     * @param list<User> $users
+     *
+     * @return array<int, bool>
+     */
+    private function canManageMap(User $actor, array $users): array
+    {
+        if ($actor->hasGlobalAccess()) {
+            return array_fill_keys(array_map(static fn (User $u) => $u->id, $users), true);
+        }
+
+        $map = [];
+        foreach ($users as $u) {
+            $map[$u->id] = (int) $u->created_by === $actor->id
+                || ! $u->created_by
+                || ($u->creator_role !== null && $actor->outranks($u->creator_role));
+        }
+
+        return $map;
+    }
+
+
     private function tierLabel(bool $scopeAll, int $multiCount, ?string $oneName, string $allLabel): string
     {
         if ($scopeAll) {
@@ -310,18 +341,29 @@ class UsersController extends BaseController
     }
 
       /**
-     * Edit and Block are further narrowed to the account's own creator
-     * for every non-globally-scoped role (Pranta/Kshetra/Vibhag/Jila/
-     * Prakhand Admin) — they can still see a user another admin added
-     * within their own shared location (visibleTo() already covers
-     * that), just not change or block one they didn't create themselves.
-     * Super Admin/Dev Admin are exempt, same as everywhere else in this
-     * controller. Password actions (view/reset) are deliberately NOT
-     * gated by this — only Edit and Block are.
+     * Edit and Block are narrowed to the account's own creator, or an
+     * actor who outranks that creator, for every non-globally-scoped
+     * role (Pranta/Kendreeya/Jila/Prakhand Admin) — they can still see a
+     * user another admin added within their own shared location
+     * (visibleTo() already covers that), just not change or block one
+     * neither they nor a superior of whoever created it. A target with
+     * no creator on record (legacy rows from before this column existed)
+     * is never locked out of editing for want of one. Super Admin/Dev
+     * Admin are exempt, same as everywhere else in this controller.
+     * Password actions (view/reset) are deliberately NOT gated by this —
+     * only Edit and Block are.
      */
     private function isOwnCreation(User $actor, User $target): bool
     {
-        return $actor->hasGlobalAccess() || (int) $target->created_by === $actor->id;
+        if ($actor->hasGlobalAccess() || (int) $target->created_by === $actor->id) {
+            return true;
+        }
+        if (! $target->created_by) {
+            return true;
+        }
+        $creator = (new UserModel())->find($target->created_by);
+
+        return $creator && $actor->outranks($creator->role);
     }
 
       /**

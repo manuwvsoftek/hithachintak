@@ -35,7 +35,7 @@
   </form>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Location</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Location</th><th>Created By</th><th>Status</th><th></th></tr></thead>
       <tbody>
       <?php foreach ($users as $u): ?>
         <tr>
@@ -43,6 +43,7 @@
           <td class="num"><?= esc(mask_phone($u->phone)) ?></td>
           <td><?= esc($roleLabels[$u->role] ?? $u->role) ?></td>
           <td><?= esc($locationLabels[$u->id] ?? '—') ?></td>
+          <td><?= esc($u->creator_name ?? '—') ?></td>
           <td><span class="pill <?= status_pill_class($u->status) ?>"><?= esc(ucfirst($u->status)) ?></span></td>
           <td>
             <?php if ($u->id !== $currentUserId && $actor->outranks($u->role)): ?>
