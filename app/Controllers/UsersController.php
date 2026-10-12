@@ -31,7 +31,7 @@ class UsersController extends BaseController
         $actor     = $this->currentUser();
 
        $query = $userModel->visibleTo($actor)
-            ->select('users.*, prakhands.name AS prakhand_name, jilas.name AS jila_name, prants.name AS prant_name')
+            ->select('users.*, prakhands.name AS prakhand_name, jilas.name AS jila_name, prants.name AS prant_name, creators.name AS creator_name, creators.role AS creator_role')
             ->join('prakhands', 'prakhands.id = users.prakhand_id', 'left')
             ->join('jilas', 'jilas.id = users.jila_id', 'left')
             ->join('prants', 'prants.id = users.prant_id', 'left')

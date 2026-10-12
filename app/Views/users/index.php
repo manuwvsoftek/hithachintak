@@ -53,7 +53,8 @@
               // UsersController::isOwnCreation(). Everyone in scope can
               // still see this row and look up its password; only the
               // admin who actually created it can change or block it.
-              $canManage = $actor->hasGlobalAccess() || (int) $u->created_by === (int) $actor->id;
+             // $canManage = $actor->hasGlobalAccess() || (int) $u->created_by === (int) $actor->id;
+             $canManage = $canManageMap[$u->id] ?? false;
             ?>
             <div class="row-actions">
               <?php if ($canManage): ?>
