@@ -63,7 +63,7 @@ if (! function_exists('enrolment_next_step_url')) {
     function enrolment_next_step_url(object $enrolment): string
     {
         return match ($enrolment->status) {
-            'otp_pending'    => site_url("admin/enrolments/{$enrolment->id}/otp"),
+            'otp_pending'    => site_url("admin/enrolments/{$enrolment->id}/confirm-cash"),
             'cash_collected' => site_url("admin/enrolments/{$enrolment->id}/remit"),
             default          => $enrolment->hasReceipt()
                 ? site_url("admin/enrolments/{$enrolment->id}/receipt")

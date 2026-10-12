@@ -105,12 +105,12 @@
         <label class="f-label"><?= esc($t['ageOrDobLabel']) ?> <span class="required-mark">*</span></label>
         <input class="f-input" id="ageOrDob" name="age_or_dob" value="<?= esc(old('age_or_dob') ?? '') ?>" placeholder="<?= esc($t['agePlaceholder']) ?>" required>
       </div>
-      <div class="field">
+     <div class="field">
         <label class="f-label"><?= esc($t['gender']) ?> <span class="required-mark">*</span></label>
         <select class="f-input" id="genderSelect" name="gender" required>
-          <option value="Male"><?= esc($t['male']) ?></option>
-          <option value="Female"><?= esc($t['female']) ?></option>
-          <option value="Other"><?= esc($t['other']) ?></option>
+          <option value="Male" <?= old('gender') === 'Male' ? 'selected' : '' ?>><?= esc($t['male']) ?></option>
+          <option value="Female" <?= old('gender') === 'Female' ? 'selected' : '' ?>><?= esc($t['female']) ?></option>
+          <option value="Other" <?= old('gender') === 'Other' ? 'selected' : '' ?>><?= esc($t['other']) ?></option>
         </select>
       </div>
       <div class="field">
@@ -161,7 +161,7 @@
         <input class="f-input" type="number" name="amount" id="amountInput" min="0" step="1" style="width:130px;font-weight:800;font-size:16px" placeholder="0" required>
         <div style="font-size:11px;color:var(--ink-faint);margin-top:3px" id="amountHelp"></div>
       </div>
-      <button type="submit" class="btn btn-primary" id="submitBtn" style="flex:1;min-width:160px"><?= esc($t['sendOtp']) ?></button>
+      <button type="submit" class="btn btn-primary" id="submitBtn" style="flex:1;min-width:160px"><?= esc($t['continueWord']) ?></button>
     </div>
   </form>
 </div>
@@ -169,7 +169,7 @@
 <script <?= csp_script_nonce() ?>>
 (function(){
   var T_AMOUNT = <?= json_encode($t['amount']) ?>;
-  var T_SEND_OTP = <?= json_encode($t['sendOtp']) ?>;
+  var T_CONTINUE = <?= json_encode($t['continueWord']) ?>;
   var T_CONTINUE_TO_PAYMENT = <?= json_encode($t['continueToPayment']) ?>;
   var T_ONLINE_HELP = <?= json_encode($t['onlineHelp']) ?>;
   var T_CASH_HELP = <?= json_encode($t['cashHelp']) ?>;
@@ -270,7 +270,7 @@
 
   function applyPaymentMode(mode){
     paymentModeHelp.textContent = mode === 'cash' ? T_CASH_HELP : T_ONLINE_HELP;
-    submitBtn.textContent = mode === 'cash' ? T_SEND_OTP : T_CONTINUE_TO_PAYMENT;
+    submitBtn.textContent = mode === 'cash' ? T_CONTINUE : T_CONTINUE_TO_PAYMENT;
   }
 
   function selectPaymentMode(mode){
@@ -481,6 +481,7 @@
       row.querySelector('.family-first-name').value = prefill.first_name || '';
       row.querySelector('.family-last-name').value = prefill.last_name || '';
       row.querySelector('.family-age').value = prefill.age_or_dob || '';
+      row.querySelector('.family-gender-select').value = prefill.gender || 'Male';
       row.querySelector('.family-contact').value = prefill.contact_number || '';
       setProfessionValue(
         row.querySelector('.family-profession-select'),
@@ -538,6 +539,48 @@
   memberPhone.addEventListener('blur', checkPhoneDuplicate);
   memberPhone.addEventListener('input', function(){ phoneNote.textContent = ''; memberPhone.classList.remove('field-invalid'); });
 
+    // ---- Minimum age: "Age / DOB" accepts either a plain age or a date of
+  // birth in a few common formats — this mirrors AgeParser.php so the
+  // instant client-side check and the server's authoritative one agree. ----
+  var MIN_AGE = 15;
+  function parsedAgeYears(value){
+    value = (value || '').trim();
+    if (!value) { return null; }
+    if (/^\d{1,3}$/.test(value)) {
+      var plain = parseInt(value, 10);
+      return plain <= 130 ? plain : null;
+    }
+    var formats = [
+      { re: /^(\d{2})-(\d{2})-(\d{4})$/, order: ['d', 'm', 'y'] },
+      { re: /^(\d{2})\/(\d{2})\/(\d{4})$/, order: ['d', 'm', 'y'] },
+      { re: /^(\d{4})-(\d{2})-(\d{2})$/, order: ['y', 'm', 'd'] },
+      { re: /^(\d{2})\.(\d{2})\.(\d{4})$/, order: ['d', 'm', 'y'] }
+    ];
+    for (var i = 0; i < formats.length; i++) {
+      var m = value.match(formats[i].re);
+      if (!m) { continue; }
+      var parts = {};
+      for (var j = 0; j < 3; j++) { parts[formats[i].order[j]] = parseInt(m[j + 1], 10); }
+      var d = parts.d, mo = parts.m, y = parts.y;
+      if (mo < 1 || mo > 12 || d < 1 || d > 31) { continue; }
+      var dob = new Date(y, mo - 1, d);
+      if (dob.getFullYear() !== y || dob.getMonth() !== mo - 1 || dob.getDate() !== d) { continue; } // rejects e.g. 31 Feb, which Date() would silently roll into March
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (dob > today) { continue; }
+      var age = today.getFullYear() - dob.getFullYear();
+      var hadBirthdayThisYear = (today.getMonth() > dob.getMonth()) || (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+      if (!hadBirthdayThisYear) { age--; }
+      if (age > 130) { continue; }
+      return age;
+    }
+    return null;
+  }
+  function ageMeetsMinimum(value){
+    var age = parsedAgeYears(value);
+    return age !== null && age >= MIN_AGE;
+  }
+
   // ---- Client-side validation: instant alert instead of a server round-trip ----
   function isFormValid(){
     var errors = [];
@@ -555,7 +598,11 @@
     }
 
     markRequired(memberFirstName, T_FIRST_NAME);
-    markRequired(ageOrDob, T_AGE_PLACEHOLDER);
+    if (markRequired(ageOrDob, T_AGE_PLACEHOLDER) && !ageMeetsMinimum(ageOrDob.value)) {
+      errors.push('Must be at least ' + MIN_AGE + ' years old — enter a valid age or date of birth.');
+      ageOrDob.classList.add('field-invalid');
+      if (!firstBad) { firstBad = ageOrDob; }
+    }
     markRequired(addressInput, 'Address');
     markRequired(emailInput, 'Email');
     //markRequired(pincodeInput, 'PIN code');
@@ -593,6 +640,10 @@
       }
       if (!age.value.trim()) {
         errors.push('Family member ' + (idx + 1) + ': ' + T_AGE_PLACEHOLDER + ' is required.');
+        age.classList.add('field-invalid');
+        if (!firstBad) { firstBad = age; }
+      } else if (!ageMeetsMinimum(age.value)) {
+        errors.push('Family member ' + (idx + 1) + ': must be at least ' + MIN_AGE + ' years old — enter a valid age or date of birth.');
         age.classList.add('field-invalid');
         if (!firstBad) { firstBad = age; }
       }
@@ -634,6 +685,7 @@
         first_name: row.querySelector('.family-first-name').value,
         last_name: row.querySelector('.family-last-name').value,
         age_or_dob: row.querySelector('.family-age').value,
+        gender: row.querySelector('.family-gender-select').value,
         profession: row.querySelector('.family-profession-value').value,
         contact_number: row.querySelector('.family-contact').value
       });
@@ -658,6 +710,7 @@
       member_first_name: memberFirstName.value,
       member_last_name: memberLastName.value,
       age_or_dob: ageOrDob.value,
+      gender: genderSelect.value,
       profession: professionValue.value,
       member_phone: memberPhone.value,
       email: emailInput.value,
@@ -682,7 +735,10 @@
     fetch('<?= site_url('admin/enrolments/draft') ?>', { method: 'POST', body: fd, credentials: 'same-origin' })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(data){
-        if (data && data[CSRF_NAME] && csrfInput) { csrfInput.value = data[CSRF_NAME]; }
+        if (data && data[CSRF_NAME]) {
+          if (window.vhpSyncCsrf) { window.vhpSyncCsrf(CSRF_NAME, data[CSRF_NAME]); }
+          else if (csrfInput) { csrfInput.value = data[CSRF_NAME]; }
+        }
         if (autosaveNote) {
           var now = new Date();
           autosaveNote.textContent = 'Saved ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
@@ -741,6 +797,7 @@
       memberFirstName.value = state.member_first_name || '';
       memberLastName.value = state.member_last_name || '';
       ageOrDob.value = state.age_or_dob || '';
+      genderSelect.value = state.gender || 'Male';
       memberPhone.value = state.member_phone || '';
       emailInput.value = state.email || '';
       addressInput.value = state.address || '';

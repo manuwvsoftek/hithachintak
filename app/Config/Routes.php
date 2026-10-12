@@ -85,6 +85,8 @@ $routes->group('admin', ['filter' => 'authGuard'], static function ($routes) {
 
     $routes->group('users', ['filter' => 'permission:Users & Hierarchy,View'], static function ($routes) {
         $routes->get('/', 'UsersController::index');
+        $routes->get('new', 'UsersController::newForm', ['filter' => 'permission:Users & Hierarchy,Edit']);
+        $routes->get('drafts', 'UsersController::drafts', ['filter' => 'permission:Users & Hierarchy,Edit']);
         $routes->post('/', 'UsersController::create', ['filter' => 'permission:Users & Hierarchy,Edit']);
         $routes->post('draft', 'UsersController::saveDraft', ['filter' => 'permission:Users & Hierarchy,Edit']);
         $routes->get('draft/(:segment)', 'UsersController::getDraft/$1', ['filter' => 'permission:Users & Hierarchy,Edit']);
@@ -104,9 +106,13 @@ $routes->group('admin', ['filter' => 'authGuard'], static function ($routes) {
         $routes->post('draft', 'EnrolmentController::saveDraft');
         $routes->get('draft/(:segment)', 'EnrolmentController::getDraft/$1');
         $routes->post('draft/(:segment)/delete', 'EnrolmentController::deleteDraft/$1');
-        $routes->get('(:num)/otp', 'EnrolmentController::showOtp/$1');
-        $routes->post('(:num)/otp/send', 'EnrolmentController::sendOtp/$1');
-        $routes->post('(:num)/otp/verify', 'EnrolmentController::verifyOtp/$1');
+        $routes->get('draft/(:segment)/confirm-cash', 'EnrolmentController::showConfirmCashDraft/$1');
+        $routes->post('draft/(:segment)/confirm-cash', 'EnrolmentController::confirmCashDraft/$1');
+        $routes->get('(:num)/confirm-cash', 'EnrolmentController::showConfirmCash/$1');
+        $routes->post('(:num)/confirm-cash', 'EnrolmentController::confirmCash/$1');
+        // $routes->get('(:num)/otp', 'EnrolmentController::showOtp/$1');
+        // $routes->post('(:num)/otp/send', 'EnrolmentController::sendOtp/$1');
+        // $routes->post('(:num)/otp/verify', 'EnrolmentController::verifyOtp/$1');
         $routes->get('(:num)/payment', 'EnrolmentController::showPayment/$1');
         $routes->post('(:num)/pay/upi', 'EnrolmentController::payUpi/$1');
         $routes->get('(:num)/pay/return', 'EnrolmentController::payReturn/$1');

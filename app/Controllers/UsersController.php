@@ -81,7 +81,10 @@ class UsersController extends BaseController
          $prants = (new PrantModel())->orderBy('name', 'ASC')->findAll();
         return view('users/index', [
             'title'      => 'Users & Hierarchy',
+            'activeTab'  => 'directory',
             'users'      => $users,
+            'draftCount' => $this->draftCount($actor),
+            'pager'      => $userModel->pager,
             'locationLabels' => $locationLabels,
             'hierarchy'  => $hierarchy,
             'prants'     => $prants,
@@ -96,6 +99,90 @@ class UsersController extends BaseController
             'resumeDraft'    => $resumeDraft,
             'ayams'       => self::AYAMS,
         ]);
+        //  return view('users/index', [
+        //     'title'      => 'Users & Hierarchy',
+        //     'activeTab'  => 'directory',
+        //     'draftCount' => $this->draftCount($actor),
+        //     'users'      => $users,
+        //     'pager'      => $userModel->pager,
+        //     'locationLabels' => $locationLabels,
+        //     'hierarchy'  => $hierarchy,
+        //     'roleLabels' => $visibleRoleLabels,
+        //     'hasGlobalAccess' => $actor->hasGlobalAccess(),
+        //     'currentUserId' => $actor->id,
+        //     'actor' => $actor,
+        // ]);
+    }
+
+     /** The New User form — its own page now (see index()'s comment). */
+    public function newForm()
+    {
+        $actor  = $this->currentUser();
+        $prants = (new PrantModel())->orderBy('name', 'ASC')->findAll();
+
+        // Same resume pattern as the New Enrolment form: an explicit
+        // ?resume=<id> from the Pending Drafts page, or a bounce-back from
+        // a failed server-side validation (old('draft_id') survives that
+        // redirect even though the rest of the POST data doesn't).
+        $resumeId = (string) ($this->request->getGet('resume') ?? '');
+        if ($resumeId === '') {
+            $resumeId = (string) (old('draft_id') ?? '');
+        }
+        $resumeDraft = null;
+        if ($resumeId !== '') {
+            $draft = (new UserDraftModel())->scopedTo($actor)->find($resumeId);
+            if ($draft) {
+                $resumeDraft = json_decode($draft['payload'], true);
+            }
+        }
+
+        return view('users/new', [
+            'title'      => 'New User',
+            'activeTab'  => 'new',
+            'draftCount' => $this->draftCount($actor),
+            'prants'     => $prants,
+            'actorPrants' => $this->actorPrantOptions($actor, $prants),
+            'roleLabels' => $this->visibleRoleLabels(),
+            'hasGlobalAccess' => $actor->hasGlobalAccess(),
+            'manageableRoles' => $this->manageableRoles($actor),
+            'actor' => $actor,
+            'resumeDraftId'  => $resumeId !== '' ? $resumeId : null,
+            'resumeDraft'    => $resumeDraft,
+            'ayams'          => self::AYAMS,
+        ]);
+    }
+
+    /** Pending (autosaved, never submitted) New User forms — its own page now (see index()'s comment). */
+    public function drafts()
+    {
+        $actor = $this->currentUser();
+
+        return view('users/drafts', [
+            'title'      => 'Pending User Drafts',
+            'activeTab'  => 'drafts',
+            'draftCount' => $this->draftCount($actor),
+            'drafts'     => (new UserDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
+            'roleLabels' => $this->visibleRoleLabels(),
+            'actor'      => $actor,
+        ]);
+    }
+
+    /**
+     * Dev Admin never appears here — not in the directory (already
+     * excluded by visibleTo() itself), not in the hierarchy counts, and
+     * not as a role-filter option, so its existence isn't surfaced to
+     * anyone through this page at all.
+     *
+     * @return array<string, string>
+     */
+    private function visibleRoleLabels(): array
+    {
+        return array_diff_key(User::ROLE_LABELS, [User::ROLE_DEV_ADMIN => true]);
+    }
+
+    private function draftCount(User $actor): int
+    {
+        return (new UserDraftModel())->scopedTo($actor)->countAllResults();
     }
 
      /**
@@ -452,7 +539,7 @@ class UsersController extends BaseController
         // credential, so first login still forces a change.
         $adminPassword = trim((string) $this->request->getPost('password'));
         if ($adminPassword !== '' && strlen($adminPassword) < 6) {
-            return redirect()->to('/admin/users')->withInput()->with('error', 'Password must be at least 6 characters.');
+            return redirect()->to('/admin/users/new')->withInput()->with('error', 'Password must be at least 6 characters.');
         }
         $tempPassword = $adminPassword !== '' ? $adminPassword : bin2hex(random_bytes(5));
         $phone        = preg_replace('/\D/', '', $this->request->getPost('phone'));
@@ -479,6 +566,17 @@ class UsersController extends BaseController
             'must_reset_password' => $adminPassword === '',
             'created_by'          => $actor->id,
         ], true);
+
+        // insert() returns false on a model-level validation failure (or
+        // the role value being rejected outright by the database — e.g. a
+        // users.role ENUM that hasn't been widened for a newly added role
+        // yet) without throwing. Proceeding past that with (int) false =
+        // 0 used to crash persistLocationScopes() with a confusing
+        // foreign-key error on the scope tables instead of surfacing
+        // what actually went wrong.
+        if (! $id) {
+            return redirect()->to('/admin/users/new')->withInput()->with('errors', $userModel->errors() ?: ['Could not create this account — please check the details and try again.']);
+        }
 
         $this->persistLocationScopes($role, (int) $id, $prantIds, $jilaIds, $prakhandIds);
 
@@ -553,7 +651,7 @@ class UsersController extends BaseController
         ];
         if ($role === User::ROLE_KARYAKARTA || $role === User::ROLE_SUB_ADMIN || $role === User::ROLE_PRAKHAND_ADMIN) {
             $rules['dob']  = 'required|valid_date[Y-m-d]';
-            $rules['ayam'] = 'required|in_list[' . implode(',', UserModel::AYAMS) . ']';
+            $rules['ayam'] = 'required|in_list[' . implode(',', self::AYAMS) . ']';
         }
         if (! $this->validate($rules)) {
             return redirect()->to('/admin/users/' . $id . '/edit')->with('errors', $this->validator->getErrors());
@@ -743,6 +841,6 @@ class UsersController extends BaseController
             $model->delete($draft['id']);
         }
 
-        return redirect()->to('/admin/users')->with('success', 'Draft discarded.');
+        return redirect()->to('/admin/users/drafts')->with('success', 'Draft discarded.');
     }
 }

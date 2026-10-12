@@ -317,20 +317,7 @@ class EnrolmentController extends BaseController
             throw PageNotFoundException::forPageNotFound();
         }
 
-        $memberName = trim(
-            (string) ($payload['member_first_name'] ?? '') . ' ' . (string) ($payload['member_last_name'] ?? '')
-        );
-
-        $model->save([
-            'id'                 => $id,
-            'created_by_user_id' => $existing['created_by_user_id'] ?? $actor->id,
-            'prant_id'           => $payload['prant_id'] ?? null,
-            'jila_id'            => $payload['jila_id'] ?? null,
-            'prakhand_id'        => $payload['prakhand_id'] ?? null,
-            'programme_code'     => $payload['programme_code'] ?? null,
-            'member_name'        => $memberName !== '' ? $memberName : null,
-            'payload'            => $payloadJson,
-        ]);
+        $this->persistDraft($payload, $actor, $id);
 
         // regenerate=true rotates the CSRF token on every verified POST —
         // hand the new one back so the next autosave call (this is a
@@ -370,6 +357,57 @@ class EnrolmentController extends BaseController
     {
         $actor = $this->currentUser();
         $post  = $this->request->getPost();
+
+         [$data, $errors] = $this->prepareEnrolmentData($post, $actor);
+        if ($errors) {
+            $redirect = redirect()->back()->withInput();
+
+            return $errors['fields'] ? $redirect->with('errors', $errors['fields']) : $redirect->with('error', $errors['message']);
+        }
+
+        $programme = (new ProgrammeModel())->byCode($data['programme_code']);
+
+        // Cash needs confirmation that money actually changed hands
+        // before the enrolment becomes real — nothing is created yet.
+        // The validated submission is parked as a draft (the same
+        // mechanism the New Enrolment form's own autosave already uses —
+        // see persistDraft()) and the Karyakarta is asked to confirm; an
+        // online payment goes straight to the gateway as always, the
+        // member authorizing it on their own device there being the
+        // verification an in-person cash handover doesn't have.
+        if (($data['payment_mode'] ?? 'online') === 'cash' && ! $programme['is_recurring']) {
+            $draftId = $this->persistDraft($post, $actor);
+
+            return redirect()->to("/admin/enrolments/draft/{$draftId}/confirm-cash");
+        }
+
+        try {
+            $enrolment = $this->service()->start($data, $actor);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $this->deleteDraftFor($post, $actor);
+
+        return redirect()->to("/admin/enrolments/{$enrolment->id}/payment?auto=1");
+    }
+
+      /**
+     * Validates $post and builds the array EnrolmentService::start() wants
+     * — the self-enrolment lock, field rules, minimum age (primary member
+     * and every family row), and the duplicate-Hithachintak-phone check,
+     * all exactly as store() used to run them inline. Works on a plain
+     * array rather than the live request (validateData(), not validate()),
+     * so it's shared by store()'s immediate online path and
+     * confirmCashDraft()'s "yes" path, which re-validates a saved draft
+     * payload the same way right before finally creating the enrolment —
+     * e.g. a phone that became a duplicate in the time since the draft
+     * was saved is still caught, not silently let through.
+     *
+     * @return array{0: ?array, 1: ?array{fields: ?array, message: ?string}}
+     */
+    private function prepareEnrolmentData(array $post, User $actor): array
+    {
 
         // Same gate as newForm(): until this account's own Hithachintak
         // enrolment has a receipt, every submission from here is forced
@@ -418,7 +456,7 @@ class EnrolmentController extends BaseController
         }
 
         if (! $this->validateData($post, $rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return [null, ['fields' => $this->validator->getErrors(), 'message' => null]];
         }
 
         // First + last name are each checked individually above (100 chars
@@ -427,16 +465,14 @@ class EnrolmentController extends BaseController
         // checks and still fail once combined, so catch that here too.
         $memberFullName = trim($post['member_first_name'] . ' ' . ($post['member_last_name'] ?? ''));
         if (mb_strlen($memberFullName) > 250) {
-            return redirect()->back()->withInput()
-                ->with('errors', ['member_last_name' => 'Full name (first + last) must be 250 characters or fewer.']);
+            return [null, ['fields' => ['member_last_name' => 'Full name must be 250 characters or fewer.'], 'message' => null]];
         }
 
         // Minimum age applies to every enrolled person, not just the
         // primary member — "Age / DOB" accepts either form, so this
         // parses whichever was typed rather than assuming a format.
         if (! AgeParser::meetsMinimumAge($post['age_or_dob'])) {
-            return redirect()->back()->withInput()
-                ->with('errors', ['age_or_dob' => 'Must be at least ' . AgeParser::MIN_AGE . ' years old — enter a valid age or date of birth.']);
+            return [null, ['fields' => ['age_or_dob' => 'Must be at least ' . AgeParser::MIN_AGE . ' years old — enter a valid age or date of birth.'], 'message' => null]];
         }
 
         // A Hithachintak-registered number can't be reused as the primary
@@ -449,8 +485,7 @@ class EnrolmentController extends BaseController
         // not a duplicate.
         $phoneDigits = preg_replace('/\D/', '', (string) $post['member_phone']);
         if (! $isSelfEnrolment && $programme && $programme['code'] === 'hc' && (new EnrolmentModel())->hasActiveHithachintak($phoneDigits)) {
-            return redirect()->back()->withInput()
-                ->with('error', 'This mobile number is already registered for Hithachintak.');
+           return [null, ['fields' => null, 'message' => 'This mobile number is already registered for Hithachintak.']];
         }
 
         $familyFirstNames  = $this->request->getPost('family_first_name') ?? [];
@@ -468,8 +503,7 @@ class EnrolmentController extends BaseController
             // error rather than a silent drop that would otherwise lose
             // a family member the admin thinks they successfully added.
             if (trim((string) $firstName) !== '' && ! AgeParser::meetsMinimumAge($familyAges[$i] ?? null)) {
-                return redirect()->back()->withInput()
-                    ->with('errors', ['family_age' => 'Family member ' . ($i + 1) . ': must be at least ' . AgeParser::MIN_AGE . ' years old — enter a valid age or date of birth.']);
+               return [null, ['fields' => ['family_age' => 'Family member ' . ($i + 1) . ': must be at least ' . AgeParser::MIN_AGE . ' years old — enter a valid age or date of birth.'], 'message' => null]];
             }
 
             $gender = $familyGenders[$i] ?? null;
@@ -484,51 +518,188 @@ class EnrolmentController extends BaseController
             ];
         }
 
-        try {
-            $enrolment = $this->service()->start([
-                'programme_code'    => $post['programme_code'],
-                'prant_id'          => $post['prant_id'],
-                'jila_id'           => ($post['jila_id'] ?? '') ?: null,
-                'prakhand_id'       => ($post['prakhand_id'] ?? '') ?: null,
-                // The form no longer has its own language picker (the
-                // topbar selector already sets this, redundantly) — take
-                // it from the same session value newForm() rendered the
-                // page with, not a submitted field.
-                'language'          => (string) (session('ui_language') ?? 'en'),
-                'payment_mode'      => ($post['payment_mode'] ?? '') === 'cash' ? 'cash' : 'online',
-                'member_first_name' => $post['member_first_name'],
-                'member_last_name'  => $post['member_last_name'] ?? null,
-                'member_phone'      => preg_replace('/\D/', '', $post['member_phone']),
-                'email'             => $post['email'] ?? null,
-                'age_or_dob'        => $post['age_or_dob'] ?? null,
-                'profession'        => $post['profession'] ?? null,
-                'address'           => $post['address'] ?? null,
-                'pincode'           => $post['pincode'] ?? null,
-                'pan'               => ! empty($post['member_pan']) ? $post['member_pan'] : null,
-                'amount'            => $post['amount'] ?? 0,
-                'family_members'    => $familyMembers,
-                'gender'            => $post['gender'],
-            ], $this->currentUser());
-        } catch (\InvalidArgumentException $e) {
-            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        return [[
+            'programme_code'    => $post['programme_code'],
+            'prant_id'          => $post['prant_id'],
+            'jila_id'           => ($post['jila_id'] ?? '') ?: null,
+            'prakhand_id'       => ($post['prakhand_id'] ?? '') ?: null,
+            // The form no longer has its own language picker (the
+            // topbar selector already sets this, redundantly) — take
+            // it from the same session value newForm() rendered the
+            // page with, not a submitted field.
+            'language'          => (string) (session('ui_language') ?? 'en'),
+            'payment_mode'      => ($post['payment_mode'] ?? '') === 'cash' ? 'cash' : 'online',
+            'member_first_name' => $post['member_first_name'],
+            'member_last_name'  => $post['member_last_name'] ?? null,
+            'member_phone'      => preg_replace('/\D/', '', $post['member_phone']),
+            'email'             => $post['email'] ?? null,
+            'age_or_dob'        => $post['age_or_dob'] ?? null,
+            'gender'            => $post['gender'],
+            'profession'        => $post['profession'] ?? null,
+            'address'           => $post['address'] ?? null,
+            'pincode'           => $post['pincode'] ?? null,
+            'pan'               => ! empty($post['member_pan']) ? $post['member_pan'] : null,
+            'amount'            => $post['amount'] ?? 0,
+            'family_members'    => $familyMembers,
+        ], null];
+    }
+
+     /**
+     * Saves $post as a resumable draft — the exact persistence saveDraft()
+     * (the client's autosave endpoint) already uses, reused here so a
+     * cash submission not yet confirmed as paid persists through that
+     * same single mechanism the Pending Drafts page and the New Enrolment
+     * form's own resume already understand, rather than inventing a
+     * second kind of saved-but-incomplete enrolment.
+     */
+    private function persistDraft(array $post, User $actor, ?string $draftId = null): string
+    {
+        $id = $draftId ?? trim((string) ($post['draft_id'] ?? ''));
+        if ($id === '' || ! preg_match('/^[A-Za-z0-9-]{8,36}$/', $id)) {
+            $id = bin2hex(random_bytes(16)); // the client always attaches one — this only covers a missing/malformed fallback
         }
 
-        // The enrolment is real now — the autosaved draft it may have
-        // started from has served its purpose. Best-effort: a missing or
-        // already-cleared draft is not an error worth surfacing here.
+        $model    = new EnrolmentDraftModel();
+        $existing = $model->find($id);
+
+        $memberName = trim(
+            (string) ($post['member_first_name'] ?? '') . ' ' . (string) ($post['member_last_name'] ?? '')
+        );
+
+        $model->save([
+            'id'                 => $id,
+            'created_by_user_id' => $existing['created_by_user_id'] ?? $actor->id,
+            'prant_id'           => $post['prant_id'] ?? null,
+            'jila_id'            => $post['jila_id'] ?? null,
+            'prakhand_id'        => $post['prakhand_id'] ?? null,
+            'programme_code'     => $post['programme_code'] ?? null,
+            'member_name'        => $memberName !== '' ? $memberName : null,
+            'payload'            => json_encode($post),
+        ]);
+
+        return $id;
+    }
+
+     /** The enrolment is real now — the autosaved draft it may have started from has served its purpose. Best-effort: a missing or already-cleared draft is not an error worth surfacing here. */
+    private function deleteDraftFor(array $post, User $actor): void
+    {
         $draftId = trim((string) ($post['draft_id'] ?? ''));
         if ($draftId !== '') {
-            (new EnrolmentDraftModel())->where('id', $draftId)->where('created_by_user_id', $this->currentUser()->id)->delete();
+            (new EnrolmentDraftModel())->where('id', $draftId)->where('created_by_user_id', $actor->id)->delete();
+        }
+    }
+
+        /**
+     * "Was cash received?" — the confirmation a cash submission from the
+     * New Enrolment form waits at before the enrolment is actually
+     * created (see store()'s own comment). Nothing exists yet except the
+     * draft; Yes finalizes it straight through to a receipt, No just
+     * leaves the draft sitting in Pending Drafts exactly as it already
+     * is.
+     */
+    public function showConfirmCashDraft($draftId)
+    {
+        $draft = (new EnrolmentDraftModel())->scopedTo($this->currentUser())->find((string) $draftId);
+        if (! $draft) {
+            throw PageNotFoundException::forPageNotFound();
         }
 
-        // Cash needs the member verified by OTP before anything is
-        // collected; an online payment goes straight to the gateway — the
-        // member authorizing it on their own device is the verification.
-        if ($enrolment->status === Enrolment::STATUS_OTP_PENDING) {
-            return redirect()->to("/admin/enrolments/{$enrolment->id}/otp");
+        $payload = json_decode($draft['payload'], true) ?: [];
+
+        return view('enrolments/confirm_cash', [
+            'title'      => 'Confirm Cash Received',
+            'actionUrl'  => site_url('admin/enrolments/draft/' . $draftId . '/confirm-cash'),
+            'backUrl'    => site_url('admin/enrolments/new') . '?resume=' . urlencode((string) $draftId),
+            'isDraft'    => true,
+            'memberName' => $draft['member_name'] ?: trim(
+                (string) ($payload['member_first_name'] ?? '') . ' ' . (string) ($payload['member_last_name'] ?? '')
+            ),
+        ]);
+    }
+
+    public function confirmCashDraft($draftId)
+    {
+        $actor = $this->currentUser();
+        $model = new EnrolmentDraftModel();
+        $draft = $model->scopedTo($actor)->find((string) $draftId);
+        if (! $draft) {
+            throw PageNotFoundException::forPageNotFound();
         }
 
-        return redirect()->to("/admin/enrolments/{$enrolment->id}/payment?auto=1");
+        if ((string) $this->request->getPost('cash_received') !== 'yes') {
+            return redirect()->to('/admin/enrolments?view=drafts')
+                ->with('success', 'Saved as a draft — resume it once the cash is received.');
+        }
+
+        $payload = json_decode($draft['payload'], true) ?: [];
+
+        [$data, $errors] = $this->prepareEnrolmentData($payload, $actor);
+        if ($errors) {
+            // The draft stays exactly as it was — the Karyakarta fixes
+            // whatever's wrong from the New Enrolment form (resumed from
+            // this same draft) and comes back through this same
+            // confirmation once it's valid again.
+            return redirect()->to('/admin/enrolments/new?resume=' . urlencode((string) $draftId))
+                ->with('error', $errors['message'] ?? 'This enrolment needs a fix before it can be confirmed — please review it and try again.');
+        }
+
+        try {
+            $enrolment = $this->service()->start($data, $actor);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->to('/admin/enrolments/new?resume=' . urlencode((string) $draftId))->with('error', $e->getMessage());
+        }
+        $enrolment = $this->service()->markCashCollected($enrolment);
+        $model->delete($draftId);
+
+        return redirect()->to($this->nextStepUrl($enrolment));
+    }
+
+    /**
+     * Same confirmation as confirmCashDraft(), for the rare enrolment
+     * still sitting in the old otp_pending status from before this
+     * replaced the OTP step — nextStepUrl() routes any such row here
+     * instead of to the no-longer-existing /otp page. A real row already
+     * exists in this case (unlike the draft path), so "No" just leaves it
+     * where it is rather than trying to turn a real enrolment back into a
+     * draft.
+     */
+    public function showConfirmCash($id)
+    {
+        $id = (int) $id;
+
+        $enrolment = $this->authorize($id);
+        if ($enrolment->status !== Enrolment::STATUS_OTP_PENDING) {
+            return redirect()->to($this->nextStepUrl($enrolment));
+        }
+
+        $member = (new \App\Models\MemberModel())->find($enrolment->member_id);
+
+        return view('enrolments/confirm_cash', [
+            'title'      => 'Confirm Cash Received',
+            'actionUrl'  => site_url('admin/enrolments/' . $id . '/confirm-cash'),
+            'backUrl'    => site_url('admin/enrolments'),
+            'isDraft'    => false,
+            'memberName' => $member['name'] ?? '',
+        ]);
+    }
+
+    public function confirmCash($id)
+    {
+        $id = (int) $id;
+
+        $enrolment = $this->authorize($id);
+        if ($enrolment->status !== Enrolment::STATUS_OTP_PENDING) {
+            return redirect()->to($this->nextStepUrl($enrolment));
+        }
+
+        if ((string) $this->request->getPost('cash_received') !== 'yes') {
+            return redirect()->to('/admin/enrolments')
+                ->with('info', 'Not confirmed yet — come back once the cash is received.');
+        }
+
+        $enrolment = $this->service()->markCashCollected($enrolment);
+
+        return redirect()->to($this->nextStepUrl($enrolment));
     }
 
     public function showOtp($id)
@@ -871,7 +1042,7 @@ class EnrolmentController extends BaseController
     private function nextStepUrl(Enrolment $enrolment): string
     {
         return match ($enrolment->status) {
-            Enrolment::STATUS_OTP_PENDING => "/admin/enrolments/{$enrolment->id}/otp",
+            Enrolment::STATUS_OTP_PENDING => "/admin/enrolments/{$enrolment->id}/confirm-cash",
             Enrolment::STATUS_CASH_COLLECTED => "/admin/enrolments/{$enrolment->id}/remit",
             default => $enrolment->hasReceipt() ? "/admin/enrolments/{$enrolment->id}/receipt" : "/admin/enrolments/{$enrolment->id}/payment",
         };

@@ -109,7 +109,7 @@ class EnrolmentService
         // gateway — there's no such thing as cash-collecting a monthly
         // mandate — so it never needs the OTP path regardless of what was
         // submitted.
-        $cashFlow = ($data['payment_mode'] ?? 'online') === 'cash' && ! $programme['is_recurring'];
+       // $cashFlow = ($data['payment_mode'] ?? 'online') === 'cash' && ! $programme['is_recurring'];
 
         $memberFirstName = trim($data['member_first_name']);
         $memberLastName  = trim($data['member_last_name'] ?? '');
@@ -139,7 +139,7 @@ class EnrolmentService
             'collected_by_user_id' => $collector->id,
             'amount'               => $amount,
             'language'             => $data['language'] ?? 'en',
-            'status'               => $cashFlow ? Enrolment::STATUS_OTP_PENDING : Enrolment::STATUS_AWAITING_PAYMENT,
+            'status'               => Enrolment::STATUS_AWAITING_PAYMENT,
         ], true);
 
         foreach ($familyMembers as $fm) {
@@ -155,9 +155,9 @@ class EnrolmentService
             ]);
         }
 
-        if ($cashFlow) {
-            $this->issueOtp($this->enrolments->find($enrolmentId));
-        }
+        // if ($cashFlow) {
+        //     $this->issueOtp($this->enrolments->find($enrolmentId));
+        // }
 
         return $this->enrolments->find($enrolmentId);
     }
