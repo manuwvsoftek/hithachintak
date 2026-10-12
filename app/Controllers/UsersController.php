@@ -47,7 +47,7 @@ class UsersController extends BaseController
             $query->groupStart()->like('users.name', $search)->orLike('users.phone', $search)->groupEnd();
         }
 
-        $users = $query->orderBy('name', 'ASC')->findAll();
+        $users = $query->orderBy('name', 'ASC')->paginate(25);
         $locationLabels = $this->locationLabelsFor($users);
         $canManageMap   = $this->canManageMap($actor, $users);
 

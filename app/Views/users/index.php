@@ -78,6 +78,7 @@
       </tbody>
     </table>
   </div>
+   <div style="margin-top:14px"><?= $pager->links() ?></div>
 </div>
 
 
