@@ -488,12 +488,13 @@ class EnrolmentController extends BaseController
            return [null, ['fields' => null, 'message' => 'This mobile number is already registered for Hithachintak.']];
         }
 
-        $familyFirstNames  = $this->request->getPost('family_first_name') ?? [];
-        $familyLastNames   = $this->request->getPost('family_last_name') ?? [];
-        $familyAges        = $this->request->getPost('family_age') ?? [];
-        $familyProfessions = $this->request->getPost('family_profession') ?? [];
-        $familyContacts    = $this->request->getPost('family_contact') ?? [];
-        $familyGender      = $this->request->getPost('family_gender') ?? [];
+       
+        $familyFirstNames  = $post['family_first_name'] ?? [];
+        $familyLastNames   = $post['family_last_name'] ?? [];
+        $familyAges        = $post['family_age'] ?? [];
+        $familyProfessions = $post['family_profession'] ?? [];
+        $familyContacts    = $post['family_contact'] ?? [];
+        $familyGenders     = $post['family_gender'] ?? [];
         $familyMembers     = [];
         foreach ($familyFirstNames as $i => $firstName) {
              // A row with no name at all is an untouched extra row, not a
