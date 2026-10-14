@@ -161,6 +161,7 @@ class UsersController extends BaseController
     public function drafts()
     {
         $actor = $this->currentUser();
+        (new UserDraftModel())->pruneExpired();
 
         return view('users/drafts', [
             'title'      => 'Pending User Drafts',
