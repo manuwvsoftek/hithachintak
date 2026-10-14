@@ -26,6 +26,18 @@ class EnrolmentDraftModel extends Model
         'payload'            => 'required',
     ];
 
+     /**
+     * Opportunistic cleanup: shared hosting here has no guaranteed cron
+     * worker, so expired drafts are swept whenever the Pending Drafts list
+     * is next loaded, rather than relying on a scheduled job. A draft
+     * nobody has touched (autosave or otherwise) in 5 days is considered
+     * abandoned.
+     */
+    public function pruneExpired(): void
+    {
+        $this->where('updated_at <', date('Y-m-d H:i:s', strtotime('-5 days')))->delete();
+    }
+
     /**
      * Same tiered visibility as EnrolmentModel::scopedTo(), applied to a
      * draft's own location columns — a Karyakarta only ever sees drafts

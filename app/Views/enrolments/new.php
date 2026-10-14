@@ -42,7 +42,8 @@
       <?php else: ?>
         <div class="field">
           <label class="f-label"><?= esc($t['prant']) ?></label>
-          <select class="f-input" name="prant_id" id="prantSelect" required>
+          <select class="f-input" name="prant_id" id="prantSelect" required
+          data-default-prant="<?= esc($locationDefault['prant_id'] ?? '') ?>">
             <option value=""><?= esc($t['prant']) ?>…</option>
             <?php foreach ($prants as $p): ?>
               <option value="<?= $p['id'] ?>"><?= esc($p['name']) ?></option>
@@ -51,11 +52,13 @@
         </div>
         <div class="field">
           <label class="f-label"><?= esc($t['jila']) ?></label>
-          <select class="f-input" name="jila_id" id="jilaSelect"><option value="">—</option></select>
+          <select class="f-input" name="jila_id" id="jilaSelect"
+          data-default-jila="<?= esc($locationDefault['jila_id'] ?? '') ?>"><option value="">—</option></select>
         </div>
         <div class="field" style="grid-column:1/-1">
           <label class="f-label"><?= esc($t['prakhand']) ?></label>
-          <select class="f-input" name="prakhand_id" id="prakhandSelect"><option value="">—</option></select>
+          <select class="f-input" name="prakhand_id" id="prakhandSelect"
+          data-default-prakhand="<?= esc($locationDefault['prakhand_id'] ?? '') ?>"><option value="">—</option></select>
         </div>
       <?php endif; ?>
     </div>
@@ -815,6 +818,29 @@
     });
   }
 
+   // ---- Default location: Prant/Jila/Prakhand Admins can be assigned
+  // several locations (unlike a Karyakarta, who is locked to one), but
+  // when the server resolved their assignment down to exactly one
+  // Prant/Jila/Prakhand it's handed down via data-default-* attributes —
+  // pre-select it the same way a resumed draft would, without locking the
+  // picker, so it's still free to change. Skipped entirely when resuming
+  // a draft, since the draft's own saved location wins instead. ----
+  function applyLocationDefaults(){
+    if (!prant) { return; }
+    var defaultPrantId = prant.getAttribute('data-default-prant');
+    if (!defaultPrantId) { return; }
+    prant.value = defaultPrantId;
+    loadJilas(defaultPrantId).then(function(){
+      var defaultJilaId = jila ? jila.getAttribute('data-default-jila') : '';
+      if (!defaultJilaId) { return; }
+      jila.value = defaultJilaId;
+      return loadPrakhands(defaultJilaId).then(function(){
+        var defaultPrakhandId = prakhand ? prakhand.getAttribute('data-default-prakhand') : '';
+        if (defaultPrakhandId) { prakhand.value = defaultPrakhandId; }
+      });
+    });
+  }
+
   var effectiveResumeId = RESUME_DRAFT_ID || (RESUME_DRAFT && RESUME_DRAFT.draft_id) || null;
   var localResume = null;
   if (effectiveResumeId) {
@@ -824,6 +850,8 @@
     applyState(localResume);
   } else if (RESUME_DRAFT) {
     applyState(RESUME_DRAFT);
+  } else {
+    applyLocationDefaults();
   }
 })();
 </script>

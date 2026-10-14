@@ -90,6 +90,8 @@ class EnrolmentController extends BaseController
     public function index()
     {
         $actor = $this->currentUser();
+        (new EnrolmentDraftModel())->pruneExpired();
+
         $draftCount = (new EnrolmentDraftModel())->scopedTo($actor)->countAllResults();
 
         if ($this->request->getGet('view') === 'drafts') {
@@ -218,6 +220,30 @@ class EnrolmentController extends BaseController
             }
         }
 
+         // Prant/Jila/Prakhand Admins aren't locked to one location the way
+        // a Karyakarta is — they can be assigned several — but when an
+        // admin's assignment happens to resolve to exactly one Prant/Jila/
+        // Prakhand, pre-selecting it saves the same cascading-dropdown
+        // friction without taking away their ability to pick a different
+        // one. LocationScope already collapses "not this tier" and
+        // "single assignment" down to a single-element array, so one rule
+        // covers every tier without special-casing each role.
+        $locationDefault = ['prant_id' => null, 'jila_id' => null, 'prakhand_id' => null];
+        if (! $lockedLocation && ! $actor->hasGlobalAccess()) {
+            $prantIds    = \App\Libraries\Rbac\LocationScope::prantIds($actor);
+            $jilaIds     = \App\Libraries\Rbac\LocationScope::jilaIds($actor);
+            $prakhandIds = \App\Libraries\Rbac\LocationScope::prakhandIds($actor);
+            if (is_array($prantIds) && count($prantIds) === 1) {
+                $locationDefault['prant_id'] = $prantIds[0];
+            }
+            if (is_array($jilaIds) && count($jilaIds) === 1) {
+                $locationDefault['jila_id'] = $jilaIds[0];
+            }
+            if (is_array($prakhandIds) && count($prakhandIds) === 1) {
+                $locationDefault['prakhand_id'] = $prakhandIds[0];
+            }
+        }
+
         // ?resume=<draftId> comes from the Enrolments list' "Pending
         // Drafts" tab — an autosaved-but-never-submitted form the same or
         // a different device left off on. A bounce-back from a failed
@@ -274,6 +300,7 @@ class EnrolmentController extends BaseController
             'lang'              => $lang,
             't'                 => \App\Libraries\Enrolment\I18n::t($lang),
             'lockedLocation'    => $lockedLocation,
+            'locationDefault'   => $locationDefault,
             'resumeDraftId'     => $resumeId !== '' ? $resumeId : null,
             'resumeDraft'       => $resumeDraft,
             'forceSelf'         => $forceSelf,

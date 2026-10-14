@@ -26,7 +26,7 @@
   <div class="panel-head">
     <div>
       <div class="panel-title">Pending Drafts</div>
-      <div class="panel-note" style="margin-top:3px">Enrolments started but not yet submitted — autosaved as the Karyakarta types, and resumable here even after a refresh, an accidental close, or a network drop.</div>
+      <div class="panel-note" style="margin-top:3px">Enrolments started but not yet submitted — autosaved as the Karyakarta types, and resumable here even after a refresh, an accidental close, or a network drop. Drafts untouched for 5 days are automatically discarded.</div>
     </div>
   </div>
   <div class="table-wrap">

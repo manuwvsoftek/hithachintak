@@ -26,6 +26,18 @@ class UserDraftModel extends Model
     ];
 
     /**
+     * Opportunistic cleanup: shared hosting here has no guaranteed cron
+     * worker, so expired drafts are swept whenever the Pending Drafts list
+     * is next loaded, rather than relying on a scheduled job. A draft
+     * nobody has touched (autosave or otherwise) in 5 days is considered
+     * abandoned.
+     */
+    public function pruneExpired(): void
+    {
+        $this->where('updated_at <', date('Y-m-d H:i:s', strtotime('-5 days')))->delete();
+    }
+    
+    /**
      * A New User draft is a personal, in-progress workspace, not
      * hierarchy-visible data like an enrolment draft — only the admin who
      * started it (or someone with unrestricted access) can see or resume
