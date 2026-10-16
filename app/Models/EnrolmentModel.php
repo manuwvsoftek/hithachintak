@@ -18,8 +18,9 @@ class EnrolmentModel extends Model
 
     protected $allowedFields = [
         'receipt_no', 'public_token', 'member_id', 'programme_id', 'prant_id', 'jila_id', 'prakhand_id',
-        'collected_by_user_id', 'amount', 'language', 'payment_mode', 'status',
-        'cashfree_order_id', 'cashfree_payment_id', 'cashfree_order_status', 'autopay_subscription_id',
+        'collected_by_user_id', 'amount', 'language', 'payment_mode', 'payment_gateway', 'status',
+        'cashfree_order_id', 'cashfree_payment_id', 'cashfree_order_status',
+        'razorpay_order_id', 'razorpay_payment_id', 'razorpay_order_status', 'autopay_subscription_id',
         'otp_code_hash', 'otp_expires_at', 'otp_attempts', 'otp_verified_at',
         'paid_at', 'receipt_sent_whatsapp_at', 'receipt_sent_email_at', 'receipt_sent_sms_at',
     ];

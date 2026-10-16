@@ -22,10 +22,10 @@ class AutopaySubscriptionModel extends Model
     protected $returnType    = AutopaySubscription::class;
     protected $useTimestamps = true;
 
-    protected $allowedFields = [
-        'enrolment_id', 'member_id', 'programme_id', 'prant_id',
-        'cashfree_subscription_id', 'amount', 'status',
-        'authorized_at', 'last_charge_at', 'cancelled_at',
+   protected $allowedFields = [
+        'enrolment_id', 'member_id', 'programme_id', 'prant_id', 'gateway',
+        'cashfree_subscription_id', 'razorpay_plan_id', 'razorpay_subscription_id',
+        'amount', 'status', 'authorized_at', 'last_charge_at', 'cancelled_at',
     ];
 
     public function forEnrolment(int $enrolmentId): ?AutopaySubscription
@@ -33,10 +33,13 @@ class AutopaySubscriptionModel extends Model
         return $this->where('enrolment_id', $enrolmentId)->first();
     }
 
-    public function forCashfreeSubscriptionId(string $subscriptionId): ?AutopaySubscription
+    public function forGatewaySubscriptionId(string $gateway, string $subscriptionId): ?AutopaySubscription
     {
-        return $this->where('cashfree_subscription_id', $subscriptionId)->first();
+        $column = $gateway === 'razorpay' ? 'razorpay_subscription_id' : 'cashfree_subscription_id';
+
+        return $this->where($column, $subscriptionId)->first();
     }
+
 
     /**
      * Same hierarchy rule as EnrolmentModel::scopedTo(). Jila/Karyakarta

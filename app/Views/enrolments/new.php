@@ -240,7 +240,7 @@
   // ---- Profession: preset dropdown, "Others" reveals a free-text field ----
   function wireProfession(selectEl, otherEl, hiddenEl){
     function sync(){
-      if (selectEl.value === 'Others') {
+      if (selectEl.value === 'Others/अन्य') {
         otherEl.style.display = '';
         hiddenEl.value = otherEl.value;
       } else {
@@ -254,15 +254,15 @@
   }
 
   function setProfessionValue(selectEl, otherEl, hiddenEl, value){
-    var isPreset = value && PROFESSIONS.indexOf(value) !== -1 && value !== 'Others';
+    var isPreset = value && PROFESSIONS.indexOf(value) !== -1 && value !== 'Others/अन्य';
     if (value && !isPreset) {
-      selectEl.value = 'Others';
+      selectEl.value = 'Others/अन्य';
       otherEl.value = value;
     } else {
       selectEl.value = value || '';
       otherEl.value = '';
     }
-    otherEl.style.display = selectEl.value === 'Others' ? '' : 'none';
+    otherEl.style.display = selectEl.value === 'Others/अन्य' ? '' : 'none';
     hiddenEl.value = value || '';
   }
 

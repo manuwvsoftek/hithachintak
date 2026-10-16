@@ -61,14 +61,14 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $scriptSrc = ['self', 'https://sdk.cashfree.com'];
+    public $scriptSrc = ['self', 'https://sdk.cashfree.com', 'https://checkout.razorpay.com'];
 
     /**
      * Specifies valid sources for JavaScript <script> elements.
      *
      * @var list<string>|string
      */
-    public array|string $scriptSrcElem = ['self', 'https://sdk.cashfree.com'];
+    public array|string $scriptSrcElem = ['self', 'https://sdk.cashfree.com', 'https://checkout.razorpay.com'];
 
     /**
      * Specifies valid sources for JavaScript inline event
@@ -137,7 +137,11 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $connectSrc = ['self', 'https://sdk.cashfree.com', 'https://api.cashfree.com', 'https://sandbox.cashfree.com'];
+       public $connectSrc = [
+        'self',
+        'https://sdk.cashfree.com', 'https://api.cashfree.com', 'https://sandbox.cashfree.com',
+        'https://api.razorpay.com', 'https://lumberjack.razorpay.com',
+    ];
 
     /**
      * Specifies the origins that can serve web fonts.
@@ -154,7 +158,11 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $formAction = ['self', 'https://sandbox.cashfree.com', 'https://api.cashfree.com', 'https://payments.cashfree.com'];
+    public $formAction = [
+        'self',
+        'https://sandbox.cashfree.com', 'https://api.cashfree.com', 'https://payments.cashfree.com',
+        'https://api.razorpay.com', 'https://checkout.razorpay.com',
+    ];
 
     /**
      * Specifies the sources that can embed the current page.
@@ -176,7 +184,11 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string|null
      */
-    public $frameSrc = ['self', 'https://sdk.cashfree.com', 'https://sandbox.cashfree.com', 'https://api.cashfree.com', 'https://payments.cashfree.com'];
+    public $frameSrc = [
+        'self',
+        'https://sdk.cashfree.com', 'https://sandbox.cashfree.com', 'https://api.cashfree.com', 'https://payments.cashfree.com',
+        'https://api.razorpay.com', 'https://checkout.razorpay.com',
+    ];
 
     /**
      * Restricts the origins allowed to deliver video and audio.

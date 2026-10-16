@@ -6,8 +6,10 @@ namespace App\Controllers;
 
 use App\Libraries\Cashfree\CashfreeClient;
 use App\Libraries\Enrolment\EnrolmentService;
+use App\Libraries\Razorpay\RazorpayClient;
+use App\Models\AutopaySubscriptionModel;
 
-/** Receives Cashfree payment-gateway webhooks — one endpoint per Prant. */
+/** Receives payment-gateway webhooks — one endpoint per Prant per provider. */
 class PaymentController extends BaseController
 {
     public function cashfreeWebhook($prantId)
@@ -64,7 +66,7 @@ class PaymentController extends BaseController
             $success        = ($payload['data']['payment_status'] ?? '') === 'SUCCESS';
 
             if ($subscriptionId && $success) {
-                $service->activateAutopaySubscription($subscriptionId);
+                $service->activateAutopaySubscription('cashfree', $subscriptionId);
             }
         }
 
@@ -81,11 +83,11 @@ class PaymentController extends BaseController
 
             if ($subscriptionId && $paymentId && $isCharge) {
                 $success = $type === 'SUBSCRIPTION_PAYMENT_SUCCESS';
-                $model   = new \App\Models\AutopaySubscriptionModel();
-                $sub     = $model->forCashfreeSubscriptionId($subscriptionId);
+                $model   = new AutopaySubscriptionModel();
+                $sub     = $model->forGatewaySubscriptionId('cashfree', $subscriptionId);
 
                 if ($sub) {
-                    $service->recordAutopayCharge($subscriptionId, (string) $paymentId, (float) ($amount ?? $sub->amount), $success);
+                    $service->recordAutopayCharge('cashfree', $subscriptionId, (string) $paymentId, (float) ($amount ?? $sub->amount), $success);
                 }
             }
         }
@@ -101,7 +103,7 @@ class PaymentController extends BaseController
 
             if ($subscriptionId) {
                 if ($status === 'ACTIVE') {
-                    $service->activateAutopaySubscription($subscriptionId);
+                    $service->activateAutopaySubscription('cashfree', $subscriptionId);
                 } else {
                     $mapped = match ($status) {
                         'ON_HOLD', 'CUSTOMER_PAUSED' => 'paused',
@@ -110,13 +112,110 @@ class PaymentController extends BaseController
                         default => null,
                     };
                     if ($mapped) {
-                        $service->updateSubscriptionStatus($subscriptionId, $mapped);
+                        $service->updateSubscriptionStatus('cashfree', $subscriptionId, $mapped);
                     }
                 }
             }
         }
 
         // Always 200 once the signature checks out — Cashfree retries on
+        // non-2xx, and we don't want retries for event types we ignore.
+        return $this->response->setStatusCode(200)->setBody('ok');
+    }
+
+    /**
+     * Razorpay webhooks, confirmed against Razorpay's own events
+     * reference. Two structural differences from Cashfree's handler
+     * above, both because Razorpay assigns its own order/payment ids
+     * rather than letting us choose them:
+     *  - Routing a regular payment vs. a Hithachintak cash remittance
+     *    can't use an order-id string prefix (REMIT- vs HTC-) the way
+     *    Cashfree's can — it's done by the matched enrolment's own
+     *    status instead (cash_collected = a remittance in progress).
+     *  - "SUBSCRIPTION_AUTH_STATUS"'s small-refunded-token-charge step
+     *    has no Razorpay equivalent; subscription.activated fires once
+     *    the mandate authenticates, subscription.charged fires for
+     *    every real billing cycle including the first.
+     */
+    public function razorpayWebhook($prantId)
+    {
+        $prantId = (int) $prantId;
+
+        $rawBody   = $this->request->getBody();
+        $signature = $this->request->getHeaderLine('x-razorpay-signature');
+
+        if (! $signature || ! (new RazorpayClient())->verifyWebhookSignature($prantId, $rawBody, $signature)) {
+            log_message('warning', 'Razorpay webhook rejected: bad or missing signature for Prant {id}.', ['id' => $prantId]);
+
+            return $this->response->setStatusCode(400)->setBody('invalid signature');
+        }
+
+        $payload = json_decode($rawBody, true) ?? [];
+        $event   = $payload['event'] ?? '';
+        $service = new EnrolmentService();
+
+        if ($event === 'payment.captured') {
+            $payment   = $payload['payload']['payment']['entity'] ?? [];
+            $orderId   = $payment['order_id'] ?? null;
+            $paymentId = $payment['id'] ?? null;
+
+            if ($orderId && $paymentId) {
+                $enrolmentModel = new \App\Models\EnrolmentModel();
+                $enrolment      = $enrolmentModel->where('razorpay_order_id', $orderId)->first();
+
+                if ($enrolment && $enrolment->status === \App\Entities\Enrolment::STATUS_CASH_COLLECTED) {
+                    $service->confirmRazorpayCashRemittance($orderId, (string) $paymentId);
+                } elseif ($enrolment) {
+                    $service->markRazorpayPaid($orderId, (string) $paymentId);
+                }
+            }
+        }
+
+        if ($event === 'subscription.authenticated' || $event === 'subscription.activated') {
+            $subscriptionId = $payload['payload']['subscription']['entity']['id'] ?? null;
+
+            if ($subscriptionId) {
+                $service->activateAutopaySubscription('razorpay', $subscriptionId);
+            }
+        }
+
+        if ($event === 'subscription.charged') {
+            $subscriptionId = $payload['payload']['subscription']['entity']['id'] ?? null;
+            $payment        = $payload['payload']['payment']['entity'] ?? [];
+            $paymentId      = $payment['id'] ?? null;
+            $amountPaise    = $payment['amount'] ?? null;
+
+            if ($subscriptionId && $paymentId) {
+                $model = new AutopaySubscriptionModel();
+                $sub   = $model->forGatewaySubscriptionId('razorpay', $subscriptionId);
+
+                if ($sub) {
+                    $amount = $amountPaise !== null ? ((float) $amountPaise) / 100 : $sub->amount;
+                    $service->recordAutopayCharge('razorpay', $subscriptionId, (string) $paymentId, $amount, true);
+                }
+            }
+        }
+
+        if (in_array($event, ['subscription.cancelled', 'subscription.paused', 'subscription.halted', 'subscription.completed'], true)) {
+            $subscriptionId = $payload['payload']['subscription']['entity']['id'] ?? null;
+
+            $mapped = match ($event) {
+                'subscription.paused'                        => 'paused',
+                'subscription.cancelled', 'subscription.completed' => 'cancelled',
+                // "halted" is Razorpay's term for repeated charge failures
+                // (e.g. an expired mandate) — functionally the same dead
+                // end as Cashfree's CARD_EXPIRED/EXPIRED, so it maps the
+                // same way.
+                'subscription.halted'                        => 'cancelled',
+                default                                       => null,
+            };
+
+            if ($subscriptionId && $mapped) {
+                $service->updateSubscriptionStatus('razorpay', $subscriptionId, $mapped);
+            }
+        }
+
+        // Always 200 once the signature checks out — Razorpay retries on
         // non-2xx, and we don't want retries for event types we ignore.
         return $this->response->setStatusCode(200)->setBody('ok');
     }

@@ -27,11 +27,18 @@ class EnrolmentController extends BaseController
      * "Others" reveals a free-text field on the form instead of adding a
      * 16th named option here.
      */
+    // public const PROFESSIONS = [
+    //     'Agriculture', 'Armed Forces', 'Business', 'CA/CS', 'Doctor', 'Educator',
+    //     'Engineer', 'Govt/PSU/Public Service', 'Home Maker', 'Pracharak', 'Private Service',
+    //     'Retired', 'Sangh Parivar', 'Social Service/NGO', 'Self Employed', 'Student', 'Others',
+    // ];
+
     public const PROFESSIONS = [
-        'Agriculture', 'Armed Forces', 'Business', 'CA/CS', 'Doctor', 'Educator',
-        'Engineer', 'Govt/PSU/Public Service', 'Home Maker', 'Pracharak', 'Private Service',
-        'Retired', 'Sangh Parivar', 'Social Service/NGO', 'Self Employed', 'Student', 'Others',
-    ];
+        'Agriculture/किसान', 'Business/व्यापार', 'CA/CS', 'Advocate/अधिवक्ता', 'Teacher/अध्यापक', 
+        'Professor/प्राध्यापक', 'Educator/शिक्षा संस्थान', 'Entrepreneur, Industry/उद्योजक', 
+        'Private service/निजी सर्विस', 'Govt services/सरकारी सर्विस', 'Home Maker/गृहिणी', 
+        'Retired/सेवानिवृत्त', 'Full timer,Pracharak/पूर्णकालिक, वानप्रस्थी, प्रचारक', 
+        'Student/विद्यार्थी', 'Engineer/इंजिनियर', 'Property Dealer/प्रॉपर्टी डीलर', 'Social service/समाजिक कार्य', 'Others/अन्य'];
 
     
     private function service(): EnrolmentService
@@ -790,18 +797,41 @@ class EnrolmentController extends BaseController
         }
 
         $t = \App\Libraries\Enrolment\I18n::t($enrolment->language);
+        $availableGateways = $this->service()->availableGatewaysForPrant($enrolment->prant_id);
 
         return view('enrolments/payment', [
             'title'     => $t['paymentTitle'],
             'enrolment' => $enrolment,
             't'         => $t,
             'programme' => (new ProgrammeModel())->find($enrolment->programme_id),
-            'gatewayReady' => (new \App\Libraries\Cashfree\CashfreeClient())->isConfiguredForPrant($enrolment->prant_id),
+            'gatewayReady'      => $availableGateways !== [],
+            'availableGateways' => $availableGateways,
+           // 'gatewayReady' => (new \App\Libraries\Cashfree\CashfreeClient())->isConfiguredForPrant($enrolment->prant_id),
             // Set only on the redirect straight from the New Enrolment form
             // when Online was chosen — nudges the gateway step to launch
             // itself instead of making the Karyakarta click again.
-            'autoPay'   => (bool) $this->request->getGet('auto'),
+            'autoPay'   => (bool) $this->request->getGet('auto')  && count($availableGateways) === 1,
         ]);
+    }
+
+    /** Validates a posted gateway choice against what's actually available for this Prant, auto-picking the only option when there's just one. */
+    private function resolveGatewayChoice(int $prantId, ?string $requested): ?string
+    {
+        $available = $this->service()->availableGatewaysForPrant($prantId);
+        if ($available === []) {
+            return null;
+        }
+        if (count($available) === 1) {
+            return $available[0];
+        }
+
+        return in_array($requested, $available, true) ? $requested : null;
+    }
+
+      /** A payment link opened inside WhatsApp/Instagram's own in-app browser can't launch UPI app intents — see detect_inapp_browser(). */
+    private function inAppBrowserInfo(): array
+    {
+        return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
     }
 
     public function payUpi($id)
@@ -810,13 +840,20 @@ class EnrolmentController extends BaseController
 
         $enrolment = $this->authorize($id);
 
-        $order = $this->service()->createCashfreeOrder(
-            $enrolment,
-            site_url("admin/enrolments/{$id}/pay/return"),
-            base_url("webhooks/cashfree/{$enrolment->prant_id}")
-        );
+        $gateway   = $this->resolveGatewayChoice($enrolment->prant_id, $this->request->getPost('gateway'));
 
-        if (! $order || empty($order['payment_session_id'])) {
+        if (! $gateway) {
+            return redirect()->to("/admin/enrolments/{$id}/payment")
+                ->with('error', 'This Prant\'s payment gateway isn\'t configured yet. Please collect cash instead, or ask a Super Admin to set it up under Settings & Integrations.');
+        }
+
+       $order = $this->service()->createOnlineOrder(
+            $enrolment,
+            $gateway,
+            site_url("admin/enrolments/{$id}/pay/return"),
+            base_url("webhooks/{$gateway}/{$enrolment->prant_id}")
+        );
+        if (! $order) {
             return redirect()->to("/admin/enrolments/{$id}/payment")
                 ->with('error', 'This Prant\'s payment gateway isn\'t configured yet. Please collect cash instead, or ask a Super Admin to set it up under Settings & Integrations.');
         }
@@ -827,18 +864,28 @@ class EnrolmentController extends BaseController
             'title'             => $t['completePaymentTitle'],
             'enrolment'         => $enrolment,
             't'                 => $t,
-            'paymentSessionId'  => $order['payment_session_id'],
+            'order'       => $order,
+            'returnUrl'   => site_url("admin/enrolments/{$id}/pay/return"),
+           // 'paymentSessionId'  => $order['payment_session_id'],
             'cashfreeEnv'       => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
+             'inAppBrowser'  => $this->inAppBrowserInfo(),
         ]);
     }
 
-    public function payReturn($id)
+   public function payReturn($id)
     {
         $id = (int) $id;
 
         $enrolment = $this->authorize($id);
 
-        if (! $enrolment->isPaid() && $enrolment->cashfree_order_id) {
+        if (! $enrolment->isPaid() && $enrolment->payment_gateway === 'razorpay' && $enrolment->razorpay_order_id) {
+            $order = (new \App\Libraries\Razorpay\RazorpayClient())->fetchOrder($enrolment->prant_id, $enrolment->razorpay_order_id);
+            if ($order && ($order['status'] ?? '') === 'paid') {
+                $payments  = (new \App\Libraries\Razorpay\RazorpayClient())->fetchOrderPayments($enrolment->prant_id, $enrolment->razorpay_order_id);
+                $paymentId = $payments['items'][0]['id'] ?? $order['id'];
+                $this->service()->markRazorpayPaid($enrolment->razorpay_order_id, (string) $paymentId);
+            }
+        } elseif (! $enrolment->isPaid() && $enrolment->cashfree_order_id) {
             $order = (new \App\Libraries\Cashfree\CashfreeClient())->fetchOrder($enrolment->prant_id, $enrolment->cashfree_order_id);
             if ($order && ($order['order_status'] ?? '') === 'PAID') {
                 $paymentId = $order['payments'][0]['cf_payment_id'] ?? ($order['cf_order_id'] ?? 'UNKNOWN');
@@ -849,7 +896,8 @@ class EnrolmentController extends BaseController
         return redirect()->to("/admin/enrolments/{$id}/payment");
     }
 
-    /** Sets up the Cashfree Autopay mandate for a recurring-donation enrolment. */
+
+    /** Sets up the Autopay mandate (Cashfree or Razorpay) for a recurring-donation enrolment. */
     public function payAutopay($id)
     {
         $id = (int) $id;
@@ -862,12 +910,19 @@ class EnrolmentController extends BaseController
             return redirect()->to("/admin/enrolments/{$id}/payment");
         }
 
+        $gateway = $this->resolveGatewayChoice($enrolment->prant_id, $this->request->getPost('gateway'));
+        if (! $gateway) {
+            return redirect()->to("/admin/enrolments/{$id}/payment")
+                ->with('error', 'This Prant\'s payment gateway isn\'t configured yet. Ask a Super Admin to set it up under Settings & Integrations.');
+        }
+
         $subscription = $this->service()->createAutopaySubscription(
             $enrolment,
+            $gateway,
             site_url("admin/enrolments/{$id}/pay/autopay/return")
         );
 
-        if (! $subscription || empty($subscription['subscription_session_id'])) {
+        if (! $subscription) {
             return redirect()->to("/admin/enrolments/{$id}/payment")
                 ->with('error', 'This Prant\'s payment gateway isn\'t configured yet. Ask a Super Admin to set it up under Settings & Integrations.');
         }
@@ -875,15 +930,18 @@ class EnrolmentController extends BaseController
         $t = \App\Libraries\Enrolment\I18n::t($enrolment->language);
 
         return view('enrolments/autopay_checkout', [
-            'title'                  => $t['authorizeAutopay'],
-            'enrolment'              => $enrolment,
-            't'                      => $t,
-            'subscriptionSessionId'  => $subscription['subscription_session_id'],
-            'cashfreeEnv'            => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
+            'title'        => $t['authorizeAutopay'],
+            'enrolment'    => $enrolment,
+            't'            => $t,
+            'subscription' => $subscription,
+            'returnUrl'    => site_url("admin/enrolments/{$id}/pay/autopay/return"),
+            'cashfreeEnv'  => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
+             'inAppBrowser'  => $this->inAppBrowserInfo(),
         ]);
     }
 
-    public function autopayReturn($id)
+
+ public function autopayReturn($id)
     {
         $id = (int) $id;
 
@@ -891,14 +949,20 @@ class EnrolmentController extends BaseController
 
         if (! $enrolment->isPaid() && $enrolment->autopay_subscription_id) {
             $subRow = (new \App\Models\AutopaySubscriptionModel())->find($enrolment->autopay_subscription_id);
-            if ($subRow && $subRow->cashfree_subscription_id) {
+
+            if ($subRow && $subRow->gateway === 'razorpay' && $subRow->razorpay_subscription_id) {
+                $subscription = (new \App\Libraries\Razorpay\RazorpayClient())->fetchSubscription($enrolment->prant_id, $subRow->razorpay_subscription_id);
+                if ($subscription && in_array($subscription['status'] ?? '', ['authenticated', 'active'], true)) {
+                    $this->service()->activateAutopaySubscription('razorpay', $subRow->razorpay_subscription_id);
+                }
+            } elseif ($subRow && $subRow->cashfree_subscription_id) {
                 $subscription = (new \App\Libraries\Cashfree\CashfreeClient())->fetchSubscription($enrolment->prant_id, $subRow->cashfree_subscription_id);
                 if ($subscription && ($subscription['subscription_status'] ?? '') === 'ACTIVE') {
                     // Authorization only — no receipt yet. The first real
                     // charge (and its receipt) arrives as its own
-                    // SUBSCRIPTION_PAYMENT_SUCCESS webhook, same as every
-                    // month after it (see EnrolmentService::recordAutopayCharge()).
-                    $this->service()->activateAutopaySubscription($subRow->cashfree_subscription_id);
+                    // subscription-charged webhook, same as every month
+                    // after it (see EnrolmentService::recordAutopayCharge()).
+                    $this->service()->activateAutopaySubscription('cashfree', $subRow->cashfree_subscription_id);
                 }
             }
         }
@@ -920,7 +984,7 @@ class EnrolmentController extends BaseController
         return redirect()->to($this->nextStepUrl($enrolment));
     }
 
-    /** Launches the Karyakarta's own Cashfree payment to remit Hithachintak cash the instant it's collected. */
+ /** Launches the Karyakarta's own gateway payment to remit Hithachintak cash the instant it's collected. */
     public function payRemit($id)
     {
         $id = (int) $id;
@@ -930,13 +994,20 @@ class EnrolmentController extends BaseController
             return redirect()->to($this->nextStepUrl($enrolment));
         }
 
+        $gateway = $this->resolveGatewayChoice($enrolment->prant_id, $this->request->getGet('gateway'));
+        if (! $gateway) {
+            return redirect()->to("/admin/enrolments/{$id}/payment")
+                ->with('error', 'This Prant\'s payment gateway isn\'t configured yet. Ask a Super Admin to set it up under Settings & Integrations before collecting Hithachintak cash.');
+        }
+
         $order = $this->service()->createRemittanceOrder(
             $enrolment,
+            $gateway,
             site_url("admin/enrolments/{$id}/remit/return"),
-            base_url("webhooks/cashfree/{$enrolment->prant_id}")
+            base_url("webhooks/{$gateway}/{$enrolment->prant_id}")
         );
 
-        if (! $order || empty($order['payment_session_id'])) {
+        if (! $order) {
             return redirect()->to("/admin/enrolments/{$id}/payment")
                 ->with('error', 'This Prant\'s payment gateway isn\'t configured yet. Ask a Super Admin to set it up under Settings & Integrations before collecting Hithachintak cash.');
         }
@@ -946,19 +1017,28 @@ class EnrolmentController extends BaseController
             't'                 => \App\Libraries\Enrolment\I18n::t($lang),
             'title'             => 'Remit cash via UPI',
             'enrolment'         => $enrolment,
-            'paymentSessionId'  => $order['payment_session_id'],
+            'order'             => $order,
+            'returnUrl'         => site_url("admin/enrolments/{$id}/remit/return"),
             'cashfreeEnv'       => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
-            
+             'inAppBrowser'  => $this->inAppBrowserInfo(),
+
         ]);
     }
 
-    public function remitReturn($id)
+    public function remitReturn($id)                                
     {
         $id = (int) $id;
 
         $enrolment = $this->authorize($id);
 
-        if (! $enrolment->isPaid() && $enrolment->cashfree_order_id) {
+        if (! $enrolment->isPaid() && $enrolment->payment_gateway === 'razorpay' && $enrolment->razorpay_order_id) {
+            $order = (new \App\Libraries\Razorpay\RazorpayClient())->fetchOrder($enrolment->prant_id, $enrolment->razorpay_order_id);
+            if ($order && ($order['status'] ?? '') === 'paid') {
+                $payments  = (new \App\Libraries\Razorpay\RazorpayClient())->fetchOrderPayments($enrolment->prant_id, $enrolment->razorpay_order_id);
+                $paymentId = $payments['items'][0]['id'] ?? $order['id'];
+                $this->service()->confirmRazorpayCashRemittance($enrolment->razorpay_order_id, (string) $paymentId);
+            }
+        } elseif (! $enrolment->isPaid() && $enrolment->cashfree_order_id) {
             $order = (new \App\Libraries\Cashfree\CashfreeClient())->fetchOrder($enrolment->prant_id, $enrolment->cashfree_order_id);
             if ($order && ($order['order_status'] ?? '') === 'PAID') {
                 $paymentId = $order['payments'][0]['cf_payment_id'] ?? ($order['cf_order_id'] ?? 'UNKNOWN');
@@ -968,6 +1048,7 @@ class EnrolmentController extends BaseController
 
         return redirect()->to("/admin/enrolments/{$id}/payment");
     }
+
 
     public function receipt($id)
     {

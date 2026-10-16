@@ -29,8 +29,10 @@ $routes->group('account', ['filter' => 'authGuard'], static function ($routes) {
     $routes->post('change-password', 'AccountController::changePassword');
 });
 
+
 // --- Payment gateway webhooks (no auth — verified by signature) ---
 $routes->post('webhooks/cashfree/(:segment)', 'PaymentController::cashfreeWebhook/$1');
+$routes->post('webhooks/razorpay/(:segment)', 'PaymentController::razorpayWebhook/$1');
 
 // --- Public receipt link, shared over SMS/WhatsApp (no auth — token is a random, non-enumerable value) ---
 $routes->get('h/rid=(:segment)', 'PublicReceiptController::show/$1');
@@ -146,6 +148,7 @@ $routes->group('admin', ['filter' => 'authGuard'], static function ($routes) {
         $routes->post('trust/bulk-import', 'SettingsController::bulkImportTrust');
         $routes->get('payment', 'SettingsController::payment');
         $routes->post('payment/(:num)', 'SettingsController::savePayment/$1');
+        $routes->post('payment/(:num)/toggle', 'SettingsController::toggleGatewayEnabled/$1');
         $routes->get('sms', 'SettingsController::sms');
         $routes->post('sms', 'SettingsController::saveSms');
         $routes->post('sms/test', 'SettingsController::testSms');

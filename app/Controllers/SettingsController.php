@@ -249,48 +249,98 @@ class SettingsController extends BaseController
 
     public function payment()
     {
-        $prants = (new PrantModel())->orderBy('name', 'ASC')->findAll();
+        $prants  = (new PrantModel())->orderBy('name', 'ASC')->findAll();
         $gcModel = new GatewayCredentialModel();
 
-        $gateways = array_map(static function ($p) use ($gcModel) {
-            $row = $gcModel->forPrant((int) $p['id']);
+        // One row per Prant per provider (Cashfree, Razorpay), flattened
+        // into a single list for the table — a Prant with neither
+        // configured still shows both as "Pending".
+        $gateways = [];
+        foreach ($prants as $p) {
+            $existing = $gcModel->allForPrant((int) $p['id']);
+            foreach (GatewayCredentialModel::PROVIDERS as $provider) {
+                $row        = $existing[$provider] ?? null;
+                $gateways[] = [
+                    'prant'    => $p,
+                    'provider' => $provider,
+                    'status'   => $row['status'] ?? 'pending',
+                    'enabled'  => (bool) ($row['enabled'] ?? false),
+                    'merchant' => $row['merchant_id'] ?? null,
+                ];
+            }
+        }
 
-            return [
-                'prant'    => $p,
-                'status'   => $row['status'] ?? 'pending',
-                'merchant' => $row['merchant_id'] ?? null,
-            ];
-        }, $prants);
-
-        $editPrantId = (int) ($this->request->getGet('edit') ?: 0);
-        $editRow     = $editPrantId ? $gcModel->forPrant($editPrantId) : null;
-        $editPrant   = $editPrantId ? (new PrantModel())->find($editPrantId) : null;
+        $editPrantId  = (int) ($this->request->getGet('edit') ?: 0);
+        $editProvider = $this->request->getGet('provider') ?: 'cashfree';
+        if (! in_array($editProvider, GatewayCredentialModel::PROVIDERS, true)) {
+            $editProvider = 'cashfree';
+        }
+        $editRow   = $editPrantId ? $gcModel->forPrant($editPrantId, $editProvider) : null;
+        $editPrant = $editPrantId ? (new PrantModel())->find($editPrantId) : null;
 
         return view('settings/payment', [
-            'title'       => 'Settings & Integrations',
-            'tabs'        => self::TABS,
-            'activeTab'   => 'payment',
-            'gateways'    => $gateways,
-            'editPrant'   => $editPrant,
-            'editRow'     => $editRow,
+            'title'        => 'Settings & Integrations',
+            'tabs'         => self::TABS,
+            'activeTab'    => 'payment',
+            'providers'    => GatewayCredentialModel::PROVIDERS,
+            'gateways'     => $gateways,
+            'editPrant'    => $editPrant,
+            'editProvider' => $editProvider,
+            'editRow'      => $editRow,
         ]);
     }
 
-    public function savePayment($prantId)
+     public function savePayment($prantId)
     {
-        $prantId = (int) $prantId;
+        $prantId  = (int) $prantId;
+        $provider = (string) $this->request->getPost('provider');
 
-        (new GatewayCredentialModel())->saveForPrant($prantId, [
+        if (! in_array($provider, GatewayCredentialModel::PROVIDERS, true)) {
+            return redirect()->to('/admin/settings/payment')->with('error', 'Unknown gateway provider.');
+        }
+
+        (new GatewayCredentialModel())->saveForPrant($prantId, $provider, [
             'app_id'      => $this->request->getPost('app_id'),
             'secret_key'  => $this->request->getPost('secret_key'),
             'merchant_id' => $this->request->getPost('merchant_id'),
             'environment' => $this->request->getPost('environment') ?: 'sandbox',
         ]);
 
-        (new AuditLogModel())->record($this->currentUser()->id, 'gateway_configured', 'prant', $prantId);
+        (new AuditLogModel())->record($this->currentUser()->id, 'gateway_configured', 'prant', $prantId, ['provider' => $provider]);
 
-        return redirect()->to('/admin/settings/payment')->with('success', 'Gateway saved and verified.');
+        return redirect()->to('/admin/settings/payment')->with('success', ucfirst($provider) . ' gateway saved and verified. It stays off at checkout until you switch it on below.');
     }
+
+     /**
+     * Switches a Prant's gateway on/off at checkout — kept separate from
+     * savePayment() so re-saving credentials never silently flips this,
+     * and so turning a gateway off doesn't require re-entering its keys.
+     * Turning one ON is refused by the model unless it's already
+     * configured (see GatewayCredentialModel::setEnabled()).
+     */
+    public function toggleGatewayEnabled($prantId)
+    {
+        $prantId  = (int) $prantId;
+        $provider = (string) $this->request->getPost('provider');
+        $enabled  = $this->request->getPost('enabled') === '1';
+
+        if (! in_array($provider, GatewayCredentialModel::PROVIDERS, true)) {
+            return redirect()->to('/admin/settings/payment')->with('error', 'Unknown gateway provider.');
+        }
+
+        $ok = (new GatewayCredentialModel())->setEnabled($prantId, $provider, $enabled);
+        if (! $ok) {
+            return redirect()->to('/admin/settings/payment')
+                ->with('error', 'Configure ' . ucfirst($provider) . ' for this Prant before enabling it.');
+        }
+
+        (new AuditLogModel())->record($this->currentUser()->id, $enabled ? 'gateway_enabled' : 'gateway_disabled', 'prant', $prantId, ['provider' => $provider]);
+
+        return redirect()->to('/admin/settings/payment')
+            ->with('success', ucfirst($provider) . ($enabled ? ' enabled' : ' disabled') . ' for this Prant.');
+    }
+
+
 
     // ---------------------------------------------------------------
     // SMS (MSG91)

@@ -11,10 +11,12 @@ use App\Libraries\Cashfree\CashfreeClient;
 use App\Libraries\Msg91\Msg91Sms;
 use App\Libraries\Msg91\Msg91WhatsApp;
 use App\Libraries\Notify\EmailSender;
+use App\Libraries\Razorpay\RazorpayClient;
 use App\Models\AutopaySubscriptionModel;
 use App\Models\CashRemittanceModel;
 use App\Models\EnrolmentFamilyMemberModel;
 use App\Models\EnrolmentModel;
+use App\Models\GatewayCredentialModel;
 use App\Models\MemberModel;
 use App\Models\ProgrammeModel;
 use App\Models\UserModel;
@@ -27,9 +29,9 @@ use App\Models\UserModel;
  */
 class EnrolmentService
 {
-    private const OTP_TTL_SECONDS = 300;
-    private const OTP_MAX_ATTEMPTS = 5;
-    private const OTP_RESEND_COOLDOWN = 30;
+    // private const OTP_TTL_SECONDS = 300;
+    // private const OTP_MAX_ATTEMPTS = 5;
+    // private const OTP_RESEND_COOLDOWN = 30;
 
     /** Hithachintak charges per person (head of family + each additional member), capped at this many additional members. */
     private const HITHACHINTAK_MAX_FAMILY_MEMBERS = 9;
@@ -48,8 +50,25 @@ class EnrolmentService
         private readonly Msg91WhatsApp $whatsapp = new Msg91WhatsApp(),
         private readonly EmailSender $email = new EmailSender(),
         private readonly CashfreeClient $cashfree = new CashfreeClient(),
+        private readonly RazorpayClient $razorpay = new RazorpayClient(),
+        private readonly GatewayCredentialModel $gatewayCredentials = new GatewayCredentialModel(),
     ) {
         helper('app');
+    }
+
+    /**
+     * Which gateway(s) a Prant's donors/Karyakartas can actually pay
+     * through right now — both switched on in Settings AND with working
+     * credentials saved. Empty means "collect cash only, online payment
+     * isn't available for this Prant yet". Exactly one means that
+     * gateway is used without asking; two means the payer is offered a
+     * choice (see EnrolmentController::showPayment()).
+     *
+     * @return list<string>
+     */
+    public function availableGatewaysForPrant(int $prantId): array
+    {
+        return $this->gatewayCredentials->enabledGatewaysForPrant($prantId);
     }
 
     /**
@@ -162,6 +181,77 @@ class EnrolmentService
         return $this->enrolments->find($enrolmentId);
     }
 
+     /**
+     * Creates an online order (UPI/QR/card, whatever the chosen gateway
+     * offers) with either Cashfree or Razorpay for this Prant, and
+     * returns a normalized response the checkout view can launch
+     * regardless of which one it is:
+     * `gateway`, `order_id`, plus `payment_session_id` (Cashfree) or
+     * `key_id`+`amount_paise` (Razorpay) — or null if that gateway isn't
+     * configured for this Prant.
+     */
+    public function createOnlineOrder(Enrolment $enrolment, string $gateway, string $returnUrl, string $notifyUrl): ?array
+    {
+        $member  = $this->members->find($enrolment->member_id);
+        $orderId = 'HTC-' . $enrolment->id . '-' . bin2hex(random_bytes(3));
+        $note    = 'Hithachintak Abhiyan enrolment #' . $enrolment->id;
+
+        if ($gateway === 'razorpay') {
+            $order = $this->razorpay->createOrder($enrolment->prant_id, $orderId, $enrolment->amount, $note);
+            if (! $order || empty($order['id'])) {
+                return null;
+            }
+
+            $this->enrolments->update($enrolment->id, [
+                'payment_mode'          => 'upi',
+                'payment_gateway'       => 'razorpay',
+                'razorpay_order_id'     => $order['id'],
+                'razorpay_order_status' => $order['status'] ?? 'created',
+            ]);
+
+            return [
+                'gateway'        => 'razorpay',
+                'order_id'       => $order['id'],
+                'key_id'         => $this->razorpay->keyIdFor($enrolment->prant_id),
+                'amount_paise'   => $order['amount'],
+                'customer_name'  => $member['name'],
+                'customer_phone' => $member['phone'],
+                'customer_email' => $member['email'] ?? '',
+            ];
+        }
+
+        $order = $this->cashfree->createOrder(
+            $enrolment->prant_id,
+            $orderId,
+            $enrolment->amount,
+            [
+                'customer_id'    => (string) $member['id'],
+                'customer_phone' => $member['phone'],
+                'customer_name'  => $member['name'],
+            ],
+            $returnUrl,
+            $notifyUrl,
+            $note
+        );
+
+        if (! $order || empty($order['payment_session_id'])) {
+            return null;
+        }
+
+        $this->enrolments->update($enrolment->id, [
+            'payment_mode'          => 'upi',
+            'payment_gateway'       => 'cashfree',
+            'cashfree_order_id'     => $orderId,
+            'cashfree_order_status' => $order['order_status'] ?? 'ACTIVE',
+        ]);
+
+        return [
+            'gateway'            => 'cashfree',
+            'order_id'           => $orderId,
+            'payment_session_id' => $order['payment_session_id'],
+        ];
+    }
+
     /**
      * (Re)issues an OTP for the enrolment's member phone. Enforces a resend
      * cooldown to limit SMS spend.
@@ -264,12 +354,28 @@ class EnrolmentService
     /** Called from the Cashfree webhook once a payment succeeds. */
     public function markCashfreePaid(string $cashfreeOrderId, string $paymentId): void
     {
-        $enrolment = $this->enrolments->where('cashfree_order_id', $cashfreeOrderId)->first();
+        $this->markGatewayPaid('cashfree', $cashfreeOrderId, $paymentId);
+    }
+
+     /** Called from the Razorpay webhook once a payment is captured. */
+    public function markRazorpayPaid(string $razorpayOrderId, string $paymentId): void
+    {
+        $this->markGatewayPaid('razorpay', $razorpayOrderId, $paymentId);
+    }
+
+     private function markGatewayPaid(string $gateway, string $orderId, string $paymentId): void
+    {
+        $enrolment = $this->findEnrolmentByGatewayOrder($gateway, $orderId);
         if (! $enrolment || $enrolment->isPaid()) {
             return;
         }
 
-        $this->enrolments->update($enrolment->id, [
+        $this->enrolments->update($enrolment->id, $gateway === 'razorpay' ? [
+            'razorpay_payment_id'   => $paymentId,
+            'razorpay_order_status' => 'paid',
+            'status'                => Enrolment::STATUS_PAID,
+            'paid_at'               => date('Y-m-d H:i:s'),
+        ] : [
             'cashfree_payment_id'   => $paymentId,
             'cashfree_order_status' => 'PAID',
             'status'                => Enrolment::STATUS_PAID,
@@ -280,6 +386,12 @@ class EnrolmentService
         $this->finalizeReceipt($enrolment);
     }
 
+      private function findEnrolmentByGatewayOrder(string $gateway, string $orderId): ?Enrolment
+    {
+        $column = $gateway === 'razorpay' ? 'razorpay_order_id' : 'cashfree_order_id';
+
+        return $this->enrolments->where($column, $orderId)->first();
+    }
     /**
      * Sets up a Cashfree Autopay mandate for a recurring-donation enrolment
      * (Autopay Monthly Donation to VHP). Returns the raw Cashfree
@@ -287,9 +399,50 @@ class EnrolmentService
      * the donor's mandate-authorization step), or null if the Prant's
      * gateway isn't configured yet.
      */
-    public function createAutopaySubscription(Enrolment $enrolment, string $returnUrl): ?array
+       public function createAutopaySubscription(Enrolment $enrolment, string $gateway, string $returnUrl): ?array
     {
-        $member         = $this->members->find($enrolment->member_id);
+        $member = $this->members->find($enrolment->member_id);
+        $note   = 'VHP Autopay Monthly Donation — enrolment #' . $enrolment->id;
+
+        if ($gateway === 'razorpay') {
+            $subscription = $this->razorpay->createSubscription(
+                $enrolment->prant_id,
+                $enrolment->amount,
+                ['customer_phone' => $member['phone'], 'customer_name' => $member['name']],
+                $note
+            );
+
+            if (! $subscription || empty($subscription['id'])) {
+                return null;
+            }
+
+            $subscriptionRowId = $this->subscriptions->insert([
+                'enrolment_id'             => $enrolment->id,
+                'member_id'                => $enrolment->member_id,
+                'programme_id'             => $enrolment->programme_id,
+                'prant_id'                 => $enrolment->prant_id,
+                'gateway'                  => 'razorpay',
+                'razorpay_plan_id'         => $subscription['plan_id'],
+                'razorpay_subscription_id' => $subscription['id'],
+                'amount'                   => $enrolment->amount,
+                'status'                   => AutopaySubscription::STATUS_PENDING,
+            ], true);
+
+            $this->enrolments->update($enrolment->id, [
+                'payment_mode'            => 'autopay',
+                'autopay_subscription_id' => $subscriptionRowId,
+            ]);
+
+            return [
+                'gateway'         => 'razorpay',
+                'subscription_id' => $subscription['id'],
+                'key_id'          => $this->razorpay->keyIdFor($enrolment->prant_id),
+                'customer_name'   => $member['name'],
+                'customer_phone'  => $member['phone'],
+                'customer_email'  => $member['email'] ?? '',
+            ];
+        }
+
         $subscriptionId = 'AMD-SUB-' . $enrolment->id . '-' . bin2hex(random_bytes(3));
 
         $subscription = $this->cashfree->createSubscription(
@@ -302,7 +455,7 @@ class EnrolmentService
                 'customer_email' => $member['email'] ?? null,
             ],
             $returnUrl,
-            'VHP Autopay Monthly Donation — enrolment #' . $enrolment->id
+            $note
         );
 
         if (! $subscription) {
@@ -314,6 +467,7 @@ class EnrolmentService
             'member_id'                => $enrolment->member_id,
             'programme_id'             => $enrolment->programme_id,
             'prant_id'                 => $enrolment->prant_id,
+            'gateway'                  => 'cashfree',
             'cashfree_subscription_id' => $subscriptionId,
             'amount'                   => $enrolment->amount,
             'status'                   => AutopaySubscription::STATUS_PENDING,
@@ -324,7 +478,10 @@ class EnrolmentService
             'autopay_subscription_id'  => $subscriptionRowId,
         ]);
 
-        return $subscription;
+        return [
+            'gateway'                 => 'cashfree',
+            'subscription_session_id' => $subscription['subscription_session_id'],
+        ];
     }
 
     /**
@@ -337,9 +494,9 @@ class EnrolmentService
      * its own SUBSCRIPTION_PAYMENT_SUCCESS_WEBHOOK and is handled
      * uniformly by recordAutopayCharge().
      */
-    public function activateAutopaySubscription(string $cashfreeSubscriptionId): void
+    public function activateAutopaySubscription(string $gateway, string $subscriptionId): void
     {
-        $subscription = $this->subscriptions->forCashfreeSubscriptionId($cashfreeSubscriptionId);
+        $subscription = $this->subscriptions->forGatewaySubscriptionId($gateway, $subscriptionId);
         if (! $subscription || $subscription->isActive()) {
             return;
         }
@@ -349,7 +506,7 @@ class EnrolmentService
             'authorized_at' => date('Y-m-d H:i:s'),
         ]);
     }
-
+    
     /**
      * Called from the Cashfree webhook for a subscription lifecycle change
      * that isn't a payment (cancelled/paused by the donor's bank or by
@@ -370,7 +527,7 @@ class EnrolmentService
         $this->subscriptions->update($subscription->id, $data);
     }
 
-    /**
+   /**
      * Records one successful (or failed) monthly charge under a
      * subscription — this fires for every real debit, the first month
      * included, since authorization itself doesn't move the donor's real
@@ -382,18 +539,18 @@ class EnrolmentService
      * the exact same pipeline as any other payment, and shows up in the
      * Enrolments/Collections/Reports screens for free.
      */
-    public function recordAutopayCharge(string $cashfreeSubscriptionId, string $paymentId, float $amount, bool $success): void
+    public function recordAutopayCharge(string $gateway, string $subscriptionId, string $paymentId, float $amount, bool $success): void
     {
-        $subscription = $this->subscriptions->forCashfreeSubscriptionId($cashfreeSubscriptionId);
+        $subscription = $this->subscriptions->forGatewaySubscriptionId($gateway, $subscriptionId);
         if (! $subscription) {
-            log_message('warning', 'Autopay charge webhook for unknown subscription {id}.', ['id' => $cashfreeSubscriptionId]);
+            log_message('warning', 'Autopay charge webhook for unknown {gw} subscription {id}.', ['gw' => $gateway, 'id' => $subscriptionId]);
 
             return;
         }
 
         if (! $success) {
-            log_message('warning', 'Autopay charge failed for subscription {id} (Cashfree payment {pid}).', [
-                'id' => $cashfreeSubscriptionId, 'pid' => $paymentId,
+            log_message('warning', 'Autopay charge failed for {gw} subscription {id} (payment {pid}).', [
+                'gw' => $gateway, 'id' => $subscriptionId, 'pid' => $paymentId,
             ]);
 
             return;
@@ -407,14 +564,16 @@ class EnrolmentService
             'last_charge_at' => $now,
         ]);
 
-        $founding = $this->enrolments->find($subscription->enrolment_id);
+        $paymentIdColumn = $gateway === 'razorpay' ? 'razorpay_payment_id' : 'cashfree_payment_id';
+        $founding        = $this->enrolments->find($subscription->enrolment_id);
 
         if ($founding && ! $founding->isPaid()) {
             $this->enrolments->update($founding->id, [
-                'payment_mode'        => 'autopay',
-                'status'              => Enrolment::STATUS_PAID,
-                'cashfree_payment_id' => $paymentId,
-                'paid_at'             => $now,
+                'payment_mode'    => 'autopay',
+                'payment_gateway' => $gateway,
+                'status'          => Enrolment::STATUS_PAID,
+                $paymentIdColumn  => $paymentId,
+                'paid_at'         => $now,
             ]);
             $this->finalizeReceipt($this->enrolments->find($founding->id));
 
@@ -431,14 +590,16 @@ class EnrolmentService
             'amount'                  => $amount,
             'language'                => $founding->language ?? 'en',
             'payment_mode'            => 'autopay',
+            'payment_gateway'         => $gateway,
             'status'                  => Enrolment::STATUS_PAID,
-            'cashfree_payment_id'     => $paymentId,
+            $paymentIdColumn          => $paymentId,
             'paid_at'                 => $now,
             'autopay_subscription_id' => $subscription->id,
         ], true);
 
         $this->finalizeReceipt($this->enrolments->find($chargeId));
     }
+
 
     /**
      * Marks cash collected. Hithachintak requires the collecting user to
@@ -475,16 +636,20 @@ class EnrolmentService
         return $enrolment;
     }
 
-    /**
-     * Creates the Cashfree order the collecting Karyakarta pays, on their
-     * own UPI app, to remit Hithachintak cash to the Trust the instant
-     * it's collected. Mirrors createCashfreeOrder() but the customer is
-     * the collecting Karyakarta, not the donor, and the order id is
-     * prefixed distinctly (REMIT- vs HTC-) so the webhook can route each
-     * to the right EnrolmentService method. Only valid while the
-     * enrolment is sitting in cash_collected, awaiting this remittance.
+        /**
+     * Creates the order the collecting Karyakarta pays, on their own UPI
+     * app, to remit Hithachintak cash to the Trust the instant it's
+     * collected. Mirrors createOnlineOrder() but the customer is the
+     * collecting Karyakarta, not the donor. Cashfree's internal order id
+     * is one we choose ourselves, prefixed distinctly (REMIT- vs HTC-),
+     * so its webhook can route on that string alone — Razorpay assigns
+     * its own order id instead, so its webhook routes on the enrolment's
+     * own status (cash_collected = a remittance in progress) rather than
+     * a prefix; see PaymentController::razorpayWebhook(). Only valid
+     * while the enrolment is sitting in cash_collected, awaiting this
+     * remittance.
      */
-    public function createRemittanceOrder(Enrolment $enrolment, string $returnUrl, string $notifyUrl): ?array
+    public function createRemittanceOrder(Enrolment $enrolment, string $gateway, string $returnUrl, string $notifyUrl): ?array
     {
         if ($enrolment->status !== Enrolment::STATUS_CASH_COLLECTED) {
             return null;
@@ -492,6 +657,29 @@ class EnrolmentService
 
         $collector = (new UserModel())->find($enrolment->collected_by_user_id);
         $orderId   = 'REMIT-' . $enrolment->id . '-' . bin2hex(random_bytes(3));
+        $note      = 'Hithachintak cash remittance — enrolment #' . $enrolment->id;
+
+        if ($gateway === 'razorpay') {
+            $order = $this->razorpay->createOrder($enrolment->prant_id, $orderId, $enrolment->amount, $note);
+            if (! $order || empty($order['id'])) {
+                return null;
+            }
+
+            $this->enrolments->update($enrolment->id, [
+                'payment_gateway'       => 'razorpay',
+                'razorpay_order_id'     => $order['id'],
+                'razorpay_order_status' => $order['status'] ?? 'created',
+            ]);
+
+            return [
+                'gateway'        => 'razorpay',
+                'order_id'       => $order['id'],
+                'key_id'         => $this->razorpay->keyIdFor($enrolment->prant_id),
+                'amount_paise'   => $order['amount'],
+                'customer_name'  => $collector->name,
+                'customer_phone' => $collector->phone,
+            ];
+        }
 
         $order = $this->cashfree->createOrder(
             $enrolment->prant_id,
@@ -504,21 +692,25 @@ class EnrolmentService
             ],
             $returnUrl,
             $notifyUrl,
-            'Hithachintak cash remittance — enrolment #' . $enrolment->id
+            $note
         );
 
-        if (! $order) {
+        if (! $order || empty($order['payment_session_id'])) {
             return null;
         }
 
         $this->enrolments->update($enrolment->id, [
+            'payment_gateway'       => 'cashfree',
             'cashfree_order_id'     => $orderId,
             'cashfree_order_status' => $order['order_status'] ?? 'ACTIVE',
         ]);
 
-        return $order;
+        return [
+            'gateway'            => 'cashfree',
+            'order_id'           => $orderId,
+            'payment_session_id' => $order['payment_session_id'],
+        ];
     }
-
     /**
      * Called once the Karyakarta's remittance order clears — from the
      * return-URL poll or the PAYMENT_SUCCESS_WEBHOOK, whichever fires
@@ -528,7 +720,18 @@ class EnrolmentService
      */
     public function confirmCashRemittance(string $cashfreeOrderId, string $paymentId): void
     {
-        $enrolment = $this->enrolments->where('cashfree_order_id', $cashfreeOrderId)->first();
+        $this->confirmGatewayCashRemittance('cashfree', $cashfreeOrderId, $paymentId);
+    }
+
+    /** Called from the Razorpay webhook once a Karyakarta's remittance order is captured. */
+    public function confirmRazorpayCashRemittance(string $razorpayOrderId, string $paymentId): void
+    {
+        $this->confirmGatewayCashRemittance('razorpay', $razorpayOrderId, $paymentId);
+    }
+
+    private function confirmGatewayCashRemittance(string $gateway, string $orderId, string $paymentId): void
+    {
+        $enrolment = $this->findEnrolmentByGatewayOrder($gateway, $orderId);
         if (! $enrolment || $enrolment->isPaid()) {
             return;
         }
@@ -542,7 +745,11 @@ class EnrolmentService
             ]);
         }
 
-        $this->enrolments->update($enrolment->id, [
+        $this->enrolments->update($enrolment->id, $gateway === 'razorpay' ? [
+            'razorpay_payment_id'   => $paymentId,
+            'razorpay_order_status' => 'paid',
+            'status'                => Enrolment::STATUS_REMITTED,
+        ] : [
             'cashfree_payment_id'   => $paymentId,
             'cashfree_order_status' => 'PAID',
             'status'                => Enrolment::STATUS_REMITTED,
@@ -586,6 +793,27 @@ class EnrolmentService
     }
 
     /**
+     * Backfills public_token on the spot for enrolments that received
+     * their receipt_no before this column existed (it was added in a
+     * later migration, with no backfill for already-receipted rows) —
+     * finalizeReceipt() only ever assigns one the first time a receipt
+     * is created, so without this, any such row's link stays empty on
+     * every future resend, forever.
+     */
+    private function ensurePublicToken(Enrolment $enrolment): string
+    {
+        if (! empty($enrolment->public_token)) {
+            return $enrolment->public_token;
+        }
+
+        $token = $this->generatePublicToken();
+        $this->enrolments->update($enrolment->id, ['public_token' => $token]);
+        $enrolment->public_token = $token;
+
+        return $token;
+    }
+
+    /**
      * Atomically allocates the next receipt number, e.g. HC/2026/000502.
      * Uses MySQL's upsert on the production driver; SQLite (dev/test only)
      * gets a portable transactional fallback since it has no equivalent.
@@ -623,29 +851,6 @@ class EnrolmentService
         return strtoupper($programmeCode) . '/' . $year . '/' . str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
     }
 
-        /**
-     * Backfills public_token on the spot for enrolments that received
-     * their receipt_no before this column existed (it was added in a
-     * later migration, with no backfill for already-receipted rows) —
-     * finalizeReceipt() only ever assigns one the first time a receipt
-     * is created, so without this, any such row's link stays empty on
-     * every future resend, forever.
-     */
-    private function ensurePublicToken(Enrolment $enrolment): string
-    {
-        if (! empty($enrolment->public_token)) {
-            return $enrolment->public_token;
-        }
-
-        $token = $this->generatePublicToken();
-        $this->enrolments->update($enrolment->id, ['public_token' => $token]);
-        $enrolment->public_token = $token;
-
-        return $token;
-    }
-
-
-
     /**
      * Sends the receipt over the requested channels. Defaults to SMS only
      * (called automatically on payment); WhatsApp/Email are opt-in from
@@ -657,10 +862,17 @@ class EnrolmentService
     {
         $member = $this->members->find($enrolment->member_id);
         $sent   = [];
-      //  $link   = base_url('h/rid=' . $enrolment->public_token);
-                    $link   = base_url('h/rid=' . $this->ensurePublicToken($enrolment));
-                    $token  = $this->ensurePublicToken($enrolment);
+        $token  = $this->ensurePublicToken($enrolment);
+        $link   = base_url('h/rid=' . $token);
+
         if (in_array('sms', $channels, true)) {
+            // The DLT-approved SMS template already has the domain/path
+            // ("https://vhpconnect.in/h/rid=") baked in as static text
+            // before its ##alp## placeholder — that placeholder is only
+            // the token suffix. Sending the full $link here doubles the
+            // URL inside the message (".../rid=https://vhpconnect.in/rid=...")
+            // which doesn't match the DLT-registered CTA pattern and gets
+            // rejected with a CTA error.
             $ok = $this->sms->sendReceiptNotification($member['phone'], $token);
             if ($ok) {
                 $this->enrolments->update($enrolment->id, ['receipt_sent_sms_at' => date('Y-m-d H:i:s')]);

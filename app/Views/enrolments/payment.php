@@ -27,6 +27,7 @@
         </p>
         <form action="<?= site_url('admin/enrolments/' . $enrolment->id . '/pay/autopay') ?>" method="post" id="autopayForm">
           <?= csrf_field() ?>
+          <?= $this->include('enrolments/_gateway_picker') ?>
           <button type="submit" class="btn btn-primary btn-block" <?= $gatewayReady ? '' : 'disabled' ?>><?= esc($t['authorizeAutopay']) ?></button>
         </form>
       </div>
@@ -37,7 +38,10 @@
       <p class="panel-note" style="margin-bottom:12px">
         <?= fmt_rupees($enrolment->amount) ?> <?= esc($t['cashPendingNote']) ?>
       </p>
-      <a class="btn btn-primary btn-block" href="<?= site_url('admin/enrolments/' . $enrolment->id . '/remit') ?>"><?= esc($t['remitNowGateway']) ?> (<?= fmt_rupees($enrolment->amount) ?>)</a>
+      <form action="<?= site_url('admin/enrolments/' . $enrolment->id . '/remit') ?>" method="get">
+        <?= $this->include('enrolments/_gateway_picker') ?>
+        <button type="submit" class="btn btn-primary btn-block" <?= $gatewayReady ? '' : 'disabled' ?>><?= esc($t['remitNowGateway']) ?> (<?= fmt_rupees($enrolment->amount) ?>)</button>
+      </form>
     </div>
   <?php else: ?>
     <div class="panel">
@@ -45,6 +49,7 @@
       <p class="panel-note" style="margin-bottom:12px"><?= esc($t['upiNote']) ?></p>
       <form action="<?= site_url('admin/enrolments/' . $enrolment->id . '/pay/upi') ?>" method="post" id="upiForm">
         <?= csrf_field() ?>
+        <?= $this->include('enrolments/_gateway_picker') ?>
         <button type="submit" class="btn btn-primary btn-block" <?= $gatewayReady ? '' : 'disabled' ?>><?= esc($t['collectViaUpi']) ?></button>
       </form>
     </div>
