@@ -829,10 +829,10 @@ class EnrolmentController extends BaseController
     }
 
       /** A payment link opened inside WhatsApp/Instagram's own in-app browser can't launch UPI app intents — see detect_inapp_browser(). */
-    private function inAppBrowserInfo(): array
-    {
-        return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
-    }
+    // private function inAppBrowserInfo(): array
+    // {
+    //     return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
+    // }
 
     public function payUpi($id)
     {
@@ -868,7 +868,7 @@ class EnrolmentController extends BaseController
             'returnUrl'   => site_url("admin/enrolments/{$id}/pay/return"),
            // 'paymentSessionId'  => $order['payment_session_id'],
             'cashfreeEnv'       => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
-             'inAppBrowser'  => $this->inAppBrowserInfo(),
+            // 'inAppBrowser'  => $this->inAppBrowserInfo(),
         ]);
     }
 
@@ -936,7 +936,7 @@ class EnrolmentController extends BaseController
             'subscription' => $subscription,
             'returnUrl'    => site_url("admin/enrolments/{$id}/pay/autopay/return"),
             'cashfreeEnv'  => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
-             'inAppBrowser'  => $this->inAppBrowserInfo(),
+            // 'inAppBrowser'  => $this->inAppBrowserInfo(),
         ]);
     }
 
@@ -1020,7 +1020,7 @@ class EnrolmentController extends BaseController
             'order'             => $order,
             'returnUrl'         => site_url("admin/enrolments/{$id}/remit/return"),
             'cashfreeEnv'       => ENVIRONMENT === 'production' ? 'production' : 'sandbox',
-             'inAppBrowser'  => $this->inAppBrowserInfo(),
+             // 'inAppBrowser'  => $this->inAppBrowserInfo(),
 
         ]);
     }

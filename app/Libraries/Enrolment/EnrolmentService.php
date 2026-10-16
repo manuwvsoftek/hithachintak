@@ -513,9 +513,9 @@ class EnrolmentService
      * Cashfree). Authorization and payment-carrying transitions go
      * through activateAutopaySubscription()/recordAutopayCharge() instead.
      */
-    public function updateSubscriptionStatus(string $cashfreeSubscriptionId, string $status): void
+    public function updateSubscriptionStatus(string $gateway, string $subscriptionId, string $status): void
     {
-        $subscription = $this->subscriptions->forCashfreeSubscriptionId($cashfreeSubscriptionId);
+        $subscription = $this->subscriptions->forGatewaySubscriptionId($gateway, $subscriptionId);
         if (! $subscription) {
             return;
         }

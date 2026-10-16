@@ -161,11 +161,11 @@
         </select>
       </div>
 
-      <div class="field"><label class="f-label">Password (optional)</label><input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically"></div>
-      <div class="field"><label class="f-label">Address (optional)</label><input class="f-input" name="address" placeholder="Address"></div>
-      <div class="field"><label class="f-label">ID — Aadhar number (optional)</label><input class="f-input" name="aadhar_number" maxlength="20" placeholder="12-digit Aadhar number"></div>
-      <div class="field"><label class="f-label">Email ID (optional)</label><input class="f-input" type="email" name="email" placeholder="name@example.org"></div>
-      <div class="field"><label class="f-label">Profession (optional)</label><input class="f-input" name="profession" placeholder="Occupation"></div>
+      <div class="field"><label class="f-label">Password</label><input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically"></div>
+      <div class="field"><label class="f-label">Address </label><input class="f-input" name="address" placeholder="Address"></div>
+      <div class="field"><label class="f-label">ID — Aadhar number </label><input class="f-input" name="aadhar_number" maxlength="20" placeholder="12-digit Aadhar number"></div>
+      <div class="field"><label class="f-label">Email ID </label><input class="f-input" type="email" name="email" placeholder="name@example.org"></div>
+      <div class="field"><label class="f-label">Profession </label><input class="f-input" name="profession" placeholder="Occupation"></div>
     </div>
     <p class="panel-note" style="margin-bottom:10px">Whatever password is set here (typed or generated) can be viewed again later from this account's "Password" action.</p>
     <button type="submit" class="btn btn-primary btn-sm">Create Account</button>
