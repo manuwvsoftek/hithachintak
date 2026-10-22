@@ -99,3 +99,43 @@ if (! function_exists('current_permission_level')) {
         return (new RolePermissionModel())->levelFor($role, $module);
     }
 }
+
+if (! function_exists('detect_inapp_browser')) {
+    /**
+     * A payment link sent over WhatsApp/SMS is usually tapped open inside
+     * that app's own in-app browser (a WebView), not the phone's real
+     * Chrome/Safari — and a WebView doesn't register the upi://, gpay://,
+     * phonepe:// etc. custom schemes the way a real browser does, so the
+     * Cashfree/Razorpay checkout's UPI app icons silently fail to appear
+     * (only the QR code still works there). This can't be fixed in the
+     * WebView itself since it belongs to WhatsApp/Instagram/etc., not
+     * this app — the standard mitigation is detecting it and prompting
+     * the donor to open the link in their real browser instead.
+     *
+     * Detection is necessarily best-effort: most Android in-app browsers
+     * append a generic "; wv)" WebView marker to the UA regardless of
+     * host app (reliable), while well-known hosts also leave their own
+     * signature (FBAN/FBAV for Facebook, Instagram, Line, MicroMessenger
+     * for WeChat, Twitter). iOS in-app browsers often leave no
+     * detectable marker at all — WhatsApp's iOS one is a common case —
+     * so a false negative there is expected and not fixable from here.
+     *
+     * @return array{inApp: bool, isAndroid: bool, isIOS: bool}
+     */
+    function detect_inapp_browser(?string $userAgent): array
+    {
+        $ua = $userAgent ?? '';
+
+        $isAndroid = (bool) preg_match('/Android/i', $ua);
+        $isIOS     = (bool) preg_match('/iPhone|iPad|iPod/i', $ua);
+
+        $knownHost      = (bool) preg_match('/FBAN|FBAV|Instagram|Line\/|MicroMessenger|WhatsApp|Snapchat|TikTok|Twitter|LinkedInApp/i', $ua);
+        $androidWebView = $isAndroid && (bool) preg_match('/; ?wv\)/i', $ua);
+
+        return [
+            'inApp'     => $knownHost || $androidWebView,
+            'isAndroid' => $isAndroid,
+            'isIOS'     => $isIOS,
+        ];
+    }
+}
