@@ -160,7 +160,7 @@
         <tr>
           <td><?= esc($r['user_name']) ?></td>
           <td class="num"><?= fmt_rupees($r['amount']) ?></td>
-          <td><?= date("d-m-Y H:i:s", esc($r['created_at'])); ?></td>
+          <td><?= esc($r['created_at']) ?></td>
           <td>
             <form action="<?= site_url('admin/enrolments/remit-cash') ?>" method="post" class="row-actions">
               <?= csrf_field() ?>
