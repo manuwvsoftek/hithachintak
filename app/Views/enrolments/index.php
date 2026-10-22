@@ -165,7 +165,7 @@
             <form action="<?= site_url('admin/enrolments/remit-cash') ?>" method="post" class="row-actions">
               <?= csrf_field() ?>
               <input type="hidden" name="remittance_id" value="<?= $r['id'] ?>">
-              <input class="f-input" name="upi_ref" placeholder="UPI ref (optional)" style="width:150px;padding:6px 8px;font-size:12px">
+              <!-- <input class="f-input" name="upi_ref" placeholder="UPI ref (optional)" style="width:150px;padding:6px 8px;font-size:12px"> -->
               <button type="submit" class="btn btn-secondary btn-sm">Mark remitted</button>
             </form>
           </td>
