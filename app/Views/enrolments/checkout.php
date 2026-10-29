@@ -16,7 +16,7 @@
 <script <?= csp_script_nonce() ?>>
 (function(){
   function launch(){
-    var rzp = new Razorpay({
+    var options = {
       key: "<?= esc($order['key_id'], 'js') ?>",
       amount: <?= (int) $order['amount_paise'] ?>,
       currency: "INR",
@@ -36,7 +36,17 @@
           window.location.href = "<?= esc($returnUrl, 'js') ?>";
         }
       }
-    });
+    };
+    <?php if (! empty($inAppBrowser['inApp'])): ?>
+    // Without this flag Razorpay's checkout silently omits the UPI apps
+    // list inside a WebView (Cashfree/our own in-app-browser detection
+    // flags the same condition) — the WebView itself still has to
+    // natively intercept upi:// / gpay:// / phonepe:// / paytmmp:// /
+    // intent:// links for the apps to actually launch, which this page
+    // can't do on its own; see Razorpay's WebView integration docs.
+    options.webview_intent = true;
+    <?php endif; ?>
+    var rzp = new Razorpay(options);
     rzp.open();
   }
   document.getElementById('manualLaunch').addEventListener('click', launch);

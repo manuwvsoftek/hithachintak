@@ -831,7 +831,20 @@ class EnrolmentController extends BaseController
       /** A payment link opened inside WhatsApp/Instagram's own in-app browser can't launch UPI app intents — see detect_inapp_browser(). */
     private function inAppBrowserInfo(): array
     {
-        return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
+       // return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
+         $info = detect_inapp_browser($this->request->getUserAgent()->getAgentString());
+
+        // UA sniffing can't recognize a third-party WebView-to-app
+        // generator (GoNative, Median, Appilix, etc.) we have no code
+        // access to — most of those tools let you append a fixed query
+        // string to the app's start URL, so ?webview=1 (or any truthy
+        // value) is a reliable, config-only way to flag "this request is
+        // coming from our wrapper app" regardless of its user agent.
+        if ($this->request->getGet('webview')) {
+            $info['inApp'] = true;
+        }
+
+        return $info;
     }
 
     public function payUpi($id)

@@ -16,7 +16,7 @@
 <script <?= csp_script_nonce() ?>>
 (function(){
   function launch(){
-    var rzp = new Razorpay({
+    var options = {
       key: "<?= esc($subscription['key_id'], 'js') ?>",
       subscription_id: "<?= esc($subscription['subscription_id'], 'js') ?>",
       name: "Vishwa Hindu Parishad",
@@ -34,7 +34,14 @@
           window.location.href = "<?= esc($returnUrl, 'js') ?>";
         }
       }
-    });
+    };
+    <?php if (! empty($inAppBrowser['inApp'])): ?>
+    // Same WebView UPI-intent flag as the one-time checkout page — not
+    // confirmed by Razorpay's docs specifically for subscription mode,
+    // but harmless to pass and likely needed for the same reason.
+    options.webview_intent = true;
+    <?php endif; ?>
+    var rzp = new Razorpay(options);
     rzp.open();
   }
   document.getElementById('manualLaunch').addEventListener('click', launch);
