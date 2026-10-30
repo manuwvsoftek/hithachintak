@@ -8,6 +8,7 @@ use App\Entities\User;
 use App\Libraries\Msg91\Msg91Sms;
 use App\Libraries\Rbac\LocationScope;
 use App\Libraries\Secrets\Vault;
+use App\Libraries\Validation\PasswordRules;
 use App\Models\AuditLogModel;
 use App\Models\EnrolmentModel;
 use App\Models\JilaModel;
@@ -53,14 +54,14 @@ class UsersController extends BaseController
         $locationLabels = $this->locationLabelsFor($users);
         $canManageMap   = $this->canManageMap($actor, $users);
 
-        // Dev Admin never appears here — not in the directory (already
-        // excluded by visibleTo() itself), not in these hierarchy counts,
-        // and not as a role-filter option below, so its existence isn't
-        // surfaced to anyone through this page at all.
-        $visibleRoleLabels = array_diff_key(User::ROLE_LABELS, [User::ROLE_DEV_ADMIN => true]);
+        $visibleRoleLabels = $this->visibleRoleLabels();
 
         $hierarchy = [];
         foreach ($visibleRoleLabels as $role => $label) {
+            if (User::rank($role) > User::rank($actor->role)) {
+                continue;
+            }
+            
             $hierarchy[] = [
                 'role'  => $label,
                 'count' => (new UserModel())->visibleTo($actor)->where('role', $role)->where('status', 'active')->countAllResults(),
@@ -189,6 +190,27 @@ class UsersController extends BaseController
     private function draftCount(User $actor): int
     {
         return (new UserDraftModel())->scopedTo($actor)->countAllResults();
+    }
+
+    /**
+     * An admin typing a specific password for someone else (new user, or
+     * Reset password) is optional — blank still means "auto-generate a
+     * temp credential" — but a password they DO type has to meet the same
+     * strong-password policy as a self-chosen one. Returns an error
+     * message, or null when $password is blank or passes.
+     */
+    private function weakPasswordError(string $password): ?string
+    {
+        if ($password === '') {
+            return null;
+        }
+
+        $error = null;
+        if (! (new PasswordRules())->strong_password($password, $error)) {
+            return str_replace('{field}', 'Password', $error ?? 'Password is not strong enough.');
+        }
+
+        return null;
     }
 
      /**
@@ -566,14 +588,14 @@ class UsersController extends BaseController
             // New User form's autosave then resumes from localStorage
             // under that same id, recovering everything the admin typed
             // instead of losing it to this round trip.
-            return redirect()->to('/admin/users')->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to('/admin/users/new')->withInput()->with('errors', $this->validator->getErrors());
         }
 
         [$prantId, $jilaId, $prakhandId, $scopeAll, $prantIds, $jilaIds, $prakhandIds] = $this->resolveLocationFields($actor);
         $role = (string) $this->request->getPost('role');
 
         if ($error = $this->locationErrorFor($role, $prantId, $jilaId, $prakhandId, $scopeAll, $prantIds, $jilaIds, $prakhandIds)) {
-            return redirect()->to('/admin/users')->withInput()->with('error', $error);
+            return redirect()->to('/admin/users/new')->withInput()->with('error', $error);
         }
 
         // An admin can type a specific password for the account instead of
@@ -583,8 +605,8 @@ class UsersController extends BaseController
         // password later; a generated one is still a genuine one-time temp
         // credential, so first login still forces a change.
         $adminPassword = trim((string) $this->request->getPost('password'));
-        if ($adminPassword !== '' && strlen($adminPassword) < 6) {
-            return redirect()->to('/admin/users/new')->withInput()->with('error', 'Password must be at least 6 characters.');
+        if ($error = $this->weakPasswordError($adminPassword)) {
+            return redirect()->to('/admin/users/new')->withInput()->with('error', $error);
         }
         $tempPassword = $adminPassword !== '' ? $adminPassword : bin2hex(random_bytes(5));
         $phone        = preg_replace('/\D/', '', $this->request->getPost('phone'));
@@ -772,8 +794,8 @@ class UsersController extends BaseController
         }
 
         $adminPassword = trim((string) $this->request->getPost('password'));
-        if ($adminPassword !== '' && strlen($adminPassword) < 6) {
-            return redirect()->to('/admin/users/' . $id . '/password')->with('error', 'Password must be at least 6 characters.');
+        if ($error = $this->weakPasswordError($adminPassword)) {
+            return redirect()->to('/admin/users/' . $id . '/password')->with('error', $error);
         }
         $tempPassword = $adminPassword !== '' ? $adminPassword : bin2hex(random_bytes(5));
 

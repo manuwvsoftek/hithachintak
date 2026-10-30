@@ -8,7 +8,7 @@
   <?= csrf_field() ?>
   <div class="field">
     <label class="f-label" for="password">New password</label>
-    <input class="f-input" type="password" id="password" name="password" minlength="8" placeholder="At least 8 characters" required autofocus>
+    <input class="f-input" type="password" id="password" name="password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="At least 8 characters, with both letters and numbers" placeholder="At least 8 characters, letters + numbers" required autofocus>
   </div>
   <div class="field">
     <label class="f-label" for="password_confirm">Confirm password</label>

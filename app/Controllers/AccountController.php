@@ -62,7 +62,7 @@ class AccountController extends BaseController
     {
         $rules = [
             'current_password' => 'required',
-            'password'         => 'required|min_length[8]',
+            'password'         => 'required|strong_password',
             'password_confirm' => 'matches[password]',
         ];
         if (! $this->validate($rules)) {
@@ -93,7 +93,7 @@ class AccountController extends BaseController
     public function setPassword()
     {
         $rules = [
-            'password'         => 'required|min_length[8]',
+            'password'         => 'required|strong_password',
             'password_confirm' => 'matches[password]',
         ];
         if (! $this->validate($rules)) {

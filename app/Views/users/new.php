@@ -161,7 +161,7 @@
         </select>
       </div>
 
-      <div class="field"><label class="f-label">Password</label><input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically"></div>
+     <div class="field"><label class="f-label">Password</label><input class="f-input" name="password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="At least 8 characters, with both letters and numbers" placeholder="Leave blank to generate one — or at least 8 chars, letters + numbers"></div>
       <div class="field"><label class="f-label">Address </label><input class="f-input" name="address" placeholder="Address"></div>
       <div class="field"><label class="f-label">ID — Aadhar number </label><input class="f-input" name="aadhar_number" maxlength="20" placeholder="12-digit Aadhar number"></div>
       <div class="field"><label class="f-label">Email ID </label><input class="f-input" type="email" name="email" placeholder="name@example.org"></div>

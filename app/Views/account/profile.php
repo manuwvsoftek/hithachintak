@@ -49,9 +49,9 @@
   <div class="panel-title" style="margin-bottom:12px">Change Password</div>
   <form action="<?= site_url('account/change-password') ?>" method="post">
     <?= csrf_field() ?>
-    <div class="form-grid">
+   <div class="form-grid">
       <div class="field" style="grid-column:1/-1"><label class="f-label">Current password</label><input class="f-input" type="password" name="current_password" required></div>
-      <div class="field"><label class="f-label">New password</label><input class="f-input" type="password" name="password" minlength="8" placeholder="At least 8 characters" required></div>
+      <div class="field"><label class="f-label">New password</label><input class="f-input" type="password" name="password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="At least 8 characters, with both letters and numbers" placeholder="At least 8 characters, letters + numbers" required></div>
       <div class="field"><label class="f-label">Confirm new password</label><input class="f-input" type="password" name="password_confirm" minlength="8" required></div>
     </div>
     <button type="submit" class="btn btn-secondary btn-sm">Change password</button>

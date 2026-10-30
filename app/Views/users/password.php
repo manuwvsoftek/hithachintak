@@ -25,7 +25,7 @@
     <?= csrf_field() ?>
     <div class="field">
       <label class="f-label">Set a new password (optional)</label>
-      <input class="f-input" name="password" minlength="6" placeholder="Leave blank to generate one automatically">
+      <input class="f-input" name="password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="At least 8 characters, with both letters and numbers" placeholder="Leave blank to generate one — or at least 8 chars, letters + numbers">
     </div>
     <button type="submit" class="btn btn-primary btn-sm" data-confirm="Update this user's password? New credentials will be sent by SMS.">Update password</button>
   </form>

@@ -224,7 +224,7 @@ class AuthController extends BaseController
         }
 
         $rules = [
-            'password'         => 'required|min_length[8]',
+            'password'         => 'required|strong_password',
             'password_confirm' => 'matches[password]',
         ];
         if (! $this->validate($rules)) {
