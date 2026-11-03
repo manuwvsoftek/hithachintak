@@ -168,9 +168,10 @@ class UsersController extends BaseController
             'title'      => 'Pending User Drafts',
             'activeTab'  => 'drafts',
             'draftCount' => $this->draftCount($actor),
-            'drafts'     => (new UserDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
+            'drafts'     => $query->orderBy('updated_at', 'DESC')->findAll(),
             'roleLabels' => $this->visibleRoleLabels(),
             'actor'      => $actor,
+            'search'     => $search,
         ]);
     }
 
@@ -857,6 +858,37 @@ class UsersController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        // Prant/Jila/Prakhand filters narrow which created accounts this
+        // report covers — each is independently optional (a Jila or
+        // Prakhand filter alone still works without picking a Prant
+        // first), since this is a report over the target's own created
+        // users, not a cascading form.
+        $prantId    = (int) ($this->request->getGet('prant_id') ?: 0);
+        $jilaId     = (int) ($this->request->getGet('jila_id') ?: 0);
+        $prakhandId = (int) ($this->request->getGet('prakhand_id') ?: 0);
+
+        // Same joins as the Directory listing (index()) — locationLabelsFor()
+        // reads $u->prant_name/jila_name/prakhand_name, which only exist
+        // when these are present, and every joined table's own columns are
+        // qualified with `users.` below for the same reason noted there
+        // (prakhands has its own jila_id, for one).
+        $createdUsersQuery = (new UserModel())
+            ->select('users.*, prakhands.name AS prakhand_name, jilas.name AS jila_name, prants.name AS prant_name')
+            ->join('prakhands', 'prakhands.id = users.prakhand_id', 'left')
+            ->join('jilas', 'jilas.id = users.jila_id', 'left')
+            ->join('prants', 'prants.id = users.prant_id', 'left')
+            ->where('users.created_by', $id);
+        if ($prantId) {
+            $createdUsersQuery->where('users.prant_id', $prantId);
+        }
+        if ($jilaId) {
+            $createdUsersQuery->where('users.jila_id', $jilaId);
+        }
+        if ($prakhandId) {
+            $createdUsersQuery->where('users.prakhand_id', $prakhandId);
+        }
+
+
         $createdUsers = (new UserModel())->where('created_by', $id)->orderBy('name', 'ASC')->findAll();
 
         // "Done" means receipted — otp_pending/awaiting_payment rows
@@ -880,12 +912,22 @@ class UsersController extends BaseController
         }
 
         return view('users/activity', [
-            'title'         => 'Activity — ' . $target->name,
-            'target'        => $target,
-            'roleLabels'    => User::ROLE_LABELS,
-            'createdUsers'  => $createdUsers,
-            'hcCountByUser' => $hcCountByUser,
-            'totalHc'       => $totalHc,
+            'title'            => 'Activity — ' . $target->name,
+            'target'           => $target,
+            'locationLabels'   => $this->locationLabelsFor($createdUsers),
+            'prants'           => (new PrantModel())->orderBy('name', 'ASC')->findAll(),
+            // Preloaded so a direct/bookmarked ?prant_id=&jila_id= link
+            // renders the right Jila/Prakhand options immediately,
+            // instead of an empty dropdown waiting on the cascade JS.
+            'jilas'            => $prantId ? (new JilaModel())->forPrant($prantId) : [],
+            'prakhands'        => $jilaId ? (new PrakhandModel())->forJila($jilaId) : [],
+            'filterPrantId'    => $prantId ?: null,
+            'filterJilaId'     => $jilaId ?: null,
+            'filterPrakhandId' => $prakhandId ?: null,
+            'roleLabels'       => User::ROLE_LABELS,
+            'createdUsers'     => $createdUsers,
+            'hcCountByUser'    => $hcCountByUser,
+            'totalHc'          => $totalHc,
         ]);
     }
 
@@ -922,6 +964,7 @@ class UsersController extends BaseController
             'id'                 => $id,
             'created_by_user_id' => $existing['created_by_user_id'] ?? $actor->id,
             'name'               => trim((string) ($payload['name'] ?? '')) ?: null,
+            'phone'              => trim((string) ($payload['phone'] ?? '')) ?: null,
             'role'               => $payload['role'] ?? null,
             'payload'            => $payloadJson,
         ]);

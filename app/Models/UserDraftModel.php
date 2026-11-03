@@ -16,7 +16,7 @@ class UserDraftModel extends Model
     protected $useTimestamps    = true;
 
     protected $allowedFields = [
-        'id', 'created_by_user_id', 'name', 'role', 'payload',
+        'id', 'created_by_user_id', 'name', 'phone', 'role', 'payload',
     ];
 
     protected $validationRules = [

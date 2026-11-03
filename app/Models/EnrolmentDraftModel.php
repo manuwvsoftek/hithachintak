@@ -17,7 +17,7 @@ class EnrolmentDraftModel extends Model
     protected $useTimestamps  = true;
 
     protected $allowedFields = [
-        'id', 'created_by_user_id', 'prant_id', 'jila_id', 'prakhand_id', 'programme_code', 'member_name', 'payload',
+        'id', 'created_by_user_id', 'prant_id', 'jila_id', 'prakhand_id', 'programme_code', 'member_name', 'member_phone', 'payload',
     ];
 
     protected $validationRules = [

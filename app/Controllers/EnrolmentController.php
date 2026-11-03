@@ -102,12 +102,19 @@ class EnrolmentController extends BaseController
         $draftCount = (new EnrolmentDraftModel())->scopedTo($actor)->countAllResults();
 
         if ($this->request->getGet('view') === 'drafts') {
+               $search      = (string) ($this->request->getGet('q') ?? '');
+            $draftsQuery = (new EnrolmentDraftModel())->scopedTo($actor);
+            if ($search !== '') {
+                $draftsQuery->groupStart()->like('member_name', $search)->orLike('member_phone', $search)->groupEnd();
+            }
+
             return view('enrolments/index', [
                 'title'      => 'Enrolments',
                 'view'       => 'drafts',
                 'drafts'     => (new EnrolmentDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
                 'draftCount' => $draftCount,
                 'programmes' => (new ProgrammeModel())->active(),
+                 'search'     => $search,
             ]);
         }
 
@@ -609,6 +616,7 @@ class EnrolmentController extends BaseController
             'prakhand_id'        => $post['prakhand_id'] ?? null,
             'programme_code'     => $post['programme_code'] ?? null,
             'member_name'        => $memberName !== '' ? $memberName : null,
+            'member_phone'       => trim((string) ($post['member_phone'] ?? '')) ?: null,
             'payload'            => json_encode($post),
         ]);
 

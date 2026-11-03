@@ -29,14 +29,20 @@
       <div class="panel-note" style="margin-top:3px">Enrolments started but not yet submitted — autosaved as the Karyakarta types, and resumable here even after a refresh, an accidental close, or a network drop. Drafts untouched for 5 days are automatically discarded.</div>
     </div>
   </div>
+  <form class="filter-row" method="get">
+    <input type="hidden" name="view" value="drafts">
+    <input type="text" name="q" placeholder="Search member name or phone" value="<?= esc($search ?? '') ?>">
+    <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+  </form>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Member</th><th>Programme</th><th>Last saved</th><th></th></tr></thead>
+      <thead><tr><th>Member</th><th>Phone</th><th>Programme</th><th>Last saved</th><th></th></tr></thead>
       <tbody>
       <?php foreach ($drafts as $d): ?>
         <?php $programmeName = ''; foreach ($programmes as $p) { if ($p['code'] === $d['programme_code']) { $programmeName = $p['name']; break; } } ?>
         <tr>
           <td style="font-weight:700"><?= esc($d['member_name'] ?: '(no name yet)') ?></td>
+          <td class="num"><?= esc($d['member_phone'] ? mask_phone($d['member_phone']) : '—') ?></td>
           <td><?= esc($programmeName ?: '—') ?></td>
           <td><?= esc(date('d M Y, g:i a', strtotime($d['updated_at']))) ?></td>
           <td class="row-actions">
@@ -49,7 +55,7 @@
         </tr>
       <?php endforeach; ?>
       <?php if (! $drafts): ?>
-        <tr><td colspan="4" class="panel-note">No pending drafts.</td></tr>
+        <tr><td colspan="5" class="panel-note"><?= ($search ?? '') !== '' ? 'No pending drafts match that search.' : 'No pending drafts.' ?></td></tr>
       <?php endif; ?>
       </tbody>
     </table>
