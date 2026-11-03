@@ -164,6 +164,12 @@ class UsersController extends BaseController
         $actor = $this->currentUser();
         (new UserDraftModel())->pruneExpired();
 
+        $search = (string) ($this->request->getGet('q') ?? '');
+        $query  = (new UserDraftModel())->scopedTo($actor);
+        if ($search !== '') {
+            $query->groupStart()->like('name', $search)->orLike('phone', $search)->groupEnd();
+        }
+
         return view('users/drafts', [
             'title'      => 'Pending User Drafts',
             'activeTab'  => 'drafts',
