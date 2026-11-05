@@ -188,7 +188,7 @@ class ReportController extends BaseController
         // reconciliation figure — same set of collectors as the filtered
         // enrolments, without re-fetching every one of their rows.
         $userIds = array_column(
-            $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
+            $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
                 ->select('enrolments.collected_by_user_id')->distinct()->findAll(),
             'collected_by_user_id'
         );

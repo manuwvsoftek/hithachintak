@@ -18,9 +18,8 @@ class EnrolmentModel extends Model
 
     protected $allowedFields = [
         'receipt_no', 'public_token', 'member_id', 'programme_id', 'prant_id', 'jila_id', 'prakhand_id',
-        'collected_by_user_id', 'amount', 'language', 'payment_mode', 'payment_gateway', 'status',
-        'cashfree_order_id', 'cashfree_payment_id', 'cashfree_order_status',
-        'razorpay_order_id', 'razorpay_payment_id', 'razorpay_order_status', 'autopay_subscription_id',
+        'collected_by_user_id', 'amount', 'language', 'payment_mode', 'status',
+        'cashfree_order_id', 'cashfree_payment_id', 'cashfree_order_status', 'autopay_subscription_id',
         'otp_code_hash', 'otp_expires_at', 'otp_attempts', 'otp_verified_at',
         'paid_at', 'receipt_sent_whatsapp_at', 'receipt_sent_email_at', 'receipt_sent_sms_at',
     ];
@@ -46,7 +45,7 @@ class EnrolmentModel extends Model
         // LocationScope handles the None-vs-set-vs-single distinction for
         // a role that's been assigned multiple (or "all") of its own
         // tier — null means unrestricted at that tier, skip the where().
-         if (in_array($actor->role, [User::ROLE_PRANTA_ADMIN, User::ROLE_KENDREEYA_ADMIN], true)) {
+        if ($actor->role === User::ROLE_PRANTA_ADMIN) {
             $ids = LocationScope::prantIds($actor);
 
             return $ids === null ? $builder : $builder->whereIn('enrolments.prant_id', $ids);
@@ -74,7 +73,20 @@ class EnrolmentModel extends Model
                 programmes.name AS programme_name, programmes.code AS programme_code,
                 prants.name AS prant_name, jilas.name AS jila_name, prakhands.name AS prakhand_name,
                 users.name AS karyakarta_name')
-            ->join('members', 'members.id = enrolments.member_id')
+            ->joinDetails();
+    }
+
+    /**
+     * Just the joins withDetails() needs for its WHERE/filter columns
+     * (programmes.code, members.name, users.name, …), without its big
+     * SELECT list. select() on the query builder only ever appends, so
+     * stacking a narrow select() on top of withDetails() silently selects
+     * both lists together — use this instead for a query that only needs
+     * one or two columns (e.g. a DISTINCT lookup).
+     */
+    public function joinDetails()
+    {
+        return $this->join('members', 'members.id = enrolments.member_id')
             ->join('programmes', 'programmes.id = enrolments.programme_id')
             ->join('prants', 'prants.id = enrolments.prant_id')
             ->join('jilas', 'jilas.id = enrolments.jila_id', 'left')
@@ -124,25 +136,5 @@ class EnrolmentModel extends Model
             ->where('members.phone', $phone)
             ->where("enrolments.receipt_no IS NOT NULL")
             ->countAllResults() > 0;
-    }
-
-    /**
-     * Finds the latest receipted enrolment for a phone number — used by
-     * the public "find my receipt" lookup (h/lookup), the phone-gated
-     * alternative to the per-enrolment token link. A phone number isn't
-     * unique at the member level (members.phone has no unique
-     * constraint — a shared family number can enrol several people), and
-     * the same member can have several receipted enrolments over time
-     * (different programmes/years), so this intentionally returns only
-     * the most recent one rather than erroring on ambiguity.
-     */
-    public function mostRecentReceiptedByPhone(string $phone): ?Enrolment
-    {
-        return $this->select('enrolments.*')
-            ->join('members', 'members.id = enrolments.member_id')
-            ->where('members.phone', $phone)
-            ->where('enrolments.receipt_no IS NOT NULL')
-            ->orderBy('enrolments.id', 'DESC')
-            ->first();
     }
 }
