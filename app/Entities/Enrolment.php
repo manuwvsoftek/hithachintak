@@ -17,6 +17,14 @@ class Enrolment extends Entity
     public const STATUS_FAILED             = 'failed';
     public const STATUS_CANCELLED          = 'cancelled';
 
+    /** Money has changed hands and a receipt exists — see hasReceipt(). The "paid" set shown in the Enrolments register and dashboard totals. */
+    public const RECEIPTED_STATUSES = [
+        self::STATUS_PAID, self::STATUS_CASH_COLLECTED, self::STATUS_CASH_PENDING_REMIT, self::STATUS_REMITTED,
+    ];
+
+    /** Started but not yet paid — neither receipted nor abandoned (failed/cancelled are neither). */
+    public const AWAITING_STATUSES = [self::STATUS_OTP_PENDING, self::STATUS_AWAITING_PAYMENT];
+
     protected $casts = [
         'id'                   => 'integer',
         'member_id'            => 'integer',

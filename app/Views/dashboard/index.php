@@ -12,14 +12,21 @@
 
 <div class="kpi-grid">
   <div class="kpi-card">
-    <div class="kpi-label">Total Enrolments</div>
+    <div class="kpi-label">Total Hithachintaks</div>
     <div class="kpi-value num"><?= number_format($totalEnrolments) ?></div>
-    <div class="kpi-sub"><?= number_format($thisWeek) ?> this week</div>
+    <div class="kpi-sub"><?= number_format($thisWeek) ?> enrolments this week</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-label">Amount Collected</div>
     <div class="kpi-value num"><?= fmt_rupees($collected) ?></div>
     <div class="kpi-sub">Across all programmes</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Awaiting Payment</div>
+    <div class="kpi-value num"><?= number_format($awaitingPayment) ?></div>
+    <?php if (current_permission_level('Enrolments') !== 'None'): ?>
+      <div class="kpi-sub"><a href="<?= site_url('admin/enrolments') ?>?view=awaiting">View</a></div>
+    <?php endif; ?>
   </div>
   <div class="kpi-card">
     <div class="kpi-label">Active Karyakartas</div>

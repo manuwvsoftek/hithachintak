@@ -61,9 +61,16 @@ class EnrolmentController extends BaseController
      * of enrolments is needed — the list itself, the quick-stat totals
      * above it, and the CSV export — so all three always agree with each
      * other instead of the export silently ignoring an active filter.
+     *
+     * Baseline-restricted to receipted (paid) enrolments — a still-pending
+     * one (otp_pending/awaiting_payment) has no confirmed amount yet and
+     * lives in its own "Awaiting Payment" tab instead, so it never
+     * inflates this register's headcount or Total Amount.
      */
     private function applyFilters($model)
     {
+        $model->whereIn('enrolments.status', Enrolment::RECEIPTED_STATUSES);
+
         $get = $this->request->getGet();
 
         if (! empty($get['programme'])) {
@@ -100,21 +107,36 @@ class EnrolmentController extends BaseController
         (new EnrolmentDraftModel())->pruneExpired();
 
         $draftCount = (new EnrolmentDraftModel())->scopedTo($actor)->countAllResults();
+        // Started but not yet paid — otp_pending/awaiting_payment never
+        // appear in the main register below (applyFilters() restricts it
+        // to receipted statuses), so they get their own tab instead of
+        // just disappearing from view. Computed up front since the tabs
+        // bar (shown on every view) always needs this count.
+        $awaitingCount = (new EnrolmentModel())->scopedTo($actor)->whereIn('status', Enrolment::AWAITING_STATUSES)->countAllResults();
 
         if ($this->request->getGet('view') === 'drafts') {
-               $search      = (string) ($this->request->getGet('q') ?? '');
-            $draftsQuery = (new EnrolmentDraftModel())->scopedTo($actor);
-            if ($search !== '') {
-                $draftsQuery->groupStart()->like('member_name', $search)->orLike('member_phone', $search)->groupEnd();
-            }
-
             return view('enrolments/index', [
-                'title'      => 'Enrolments',
-                'view'       => 'drafts',
-                'drafts'     => (new EnrolmentDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
-                'draftCount' => $draftCount,
-                'programmes' => (new ProgrammeModel())->active(),
-                 'search'     => $search,
+                'title'         => 'Enrolments',
+                'view'          => 'drafts',
+                'drafts'        => (new EnrolmentDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
+                'draftCount'    => $draftCount,
+                'awaitingCount' => $awaitingCount,
+                'programmes'    => (new ProgrammeModel())->active(),
+            ]);
+        }
+
+        // Same small-working-set assumption as the Pending Drafts tab
+        // above: these are transient, not the full historical register,
+        // so findAll() without pagination is fine.
+        if ($this->request->getGet('view') === 'awaiting') {
+            return view('enrolments/index', [
+                'title'         => 'Enrolments',
+                'view'          => 'awaiting',
+                'awaiting'      => (new EnrolmentModel())->scopedTo($actor)->withDetails()
+                    ->whereIn('enrolments.status', Enrolment::AWAITING_STATUSES)
+                    ->orderBy('enrolments.created_at', 'DESC')->findAll(),
+                'draftCount'    => $draftCount,
+                'awaitingCount' => $awaitingCount,
             ]);
         }
 
@@ -132,6 +154,19 @@ class EnrolmentController extends BaseController
                 SUM(CASE WHEN enrolments.payment_mode = "cash" THEN enrolments.amount ELSE 0 END) AS cash_amount
             ', false)
             ->first();
+
+        // "Number of Hithachintaks" for the KPI card — every receipted
+        // enrolment counts as one person, plus every family member added
+        // under it, so this headcount is what Total Amount should tally
+        // against (not just the count of enrolment rows, which undercounts
+        // every enrolment with a family attached). A plain aggregate
+        // (no GROUP BY) always collapses to exactly one row, so this is
+        // safe regardless of how large the filtered set is.
+        $headcount = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
+            ->join('enrolment_family_members efm', 'efm.enrolment_id = enrolments.id', 'left')
+            ->select('COUNT(DISTINCT enrolments.id) AS enrolment_count, COUNT(efm.id) AS family_count', false)
+            ->first();
+        $totalPersons = (int) ($headcount->enrolment_count ?? 0) + (int) ($headcount->family_count ?? 0);
 
         // Cash still awaiting remittance to VHP's account — Hithachintak
         // no longer has this state at all (its cash is remitted instantly
@@ -157,11 +192,13 @@ class EnrolmentController extends BaseController
             'title'             => 'Enrolments',
             'view'              => 'list',
             'draftCount'        => $draftCount,
+            'awaitingCount'     => $awaitingCount,
             'enrolments'        => $enrolments,
             'familyByEnrolment' => $familyByEnrolment,
             'pager'             => $model->pager,
             'programmes'        => (new ProgrammeModel())->active(),
             'totalCount'        => $model->pager->getTotal(),
+            'totalPersons'      => $totalPersons,
             'totalAmount'       => (float) ($sums?->total_amount ?? 0),
             'upiAmount'         => (float) ($sums?->upi_amount ?? 0),
             'cashAmount'        => (float) ($sums?->cash_amount ?? 0),
@@ -483,7 +520,7 @@ class EnrolmentController extends BaseController
             'age_or_dob'        => 'required|max_length[30]',
             'address'           => 'required|max_length[255]',
            // 'pincode'           => 'required|regex_match[/^[0-9]{6}$/]',
-            'email'             => 'required|valid_email',
+            'email'             => 'permit_empty|valid_email',
             'amount'            => 'permit_empty|numeric',
             'gender'            => 'required',
         ];
@@ -616,7 +653,6 @@ class EnrolmentController extends BaseController
             'prakhand_id'        => $post['prakhand_id'] ?? null,
             'programme_code'     => $post['programme_code'] ?? null,
             'member_name'        => $memberName !== '' ? $memberName : null,
-            'member_phone'       => trim((string) ($post['member_phone'] ?? '')) ?: null,
             'payload'            => json_encode($post),
         ]);
 
@@ -839,20 +875,7 @@ class EnrolmentController extends BaseController
       /** A payment link opened inside WhatsApp/Instagram's own in-app browser can't launch UPI app intents — see detect_inapp_browser(). */
     private function inAppBrowserInfo(): array
     {
-       // return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
-         $info = detect_inapp_browser($this->request->getUserAgent()->getAgentString());
-
-        // UA sniffing can't recognize a third-party WebView-to-app
-        // generator (GoNative, Median, Appilix, etc.) we have no code
-        // access to — most of those tools let you append a fixed query
-        // string to the app's start URL, so ?webview=1 (or any truthy
-        // value) is a reliable, config-only way to flag "this request is
-        // coming from our wrapper app" regardless of its user agent.
-        if ($this->request->getGet('webview')) {
-            $info['inApp'] = true;
-        }
-
-        return $info;
+        return detect_inapp_browser($this->request->getUserAgent()->getAgentString());
     }
 
     public function payUpi($id)

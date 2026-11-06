@@ -8,7 +8,6 @@ use App\Entities\User;
 use App\Libraries\Msg91\Msg91Sms;
 use App\Libraries\Rbac\LocationScope;
 use App\Libraries\Secrets\Vault;
-use App\Libraries\Validation\PasswordRules;
 use App\Models\AuditLogModel;
 use App\Models\EnrolmentModel;
 use App\Models\JilaModel;
@@ -50,18 +49,18 @@ class UsersController extends BaseController
             $query->groupStart()->like('users.name', $search)->orLike('users.phone', $search)->groupEnd();
         }
 
-        $users = $query->orderBy('name', 'ASC')->paginate(25);
+        $users = $query->orderBy('users.created_at', 'DESC')->paginate(25);
         $locationLabels = $this->locationLabelsFor($users);
         $canManageMap   = $this->canManageMap($actor, $users);
 
-        $visibleRoleLabels = $this->visibleRoleLabels();
+        // Dev Admin never appears here — not in the directory (already
+        // excluded by visibleTo() itself), not in these hierarchy counts,
+        // and not as a role-filter option below, so its existence isn't
+        // surfaced to anyone through this page at all.
+        $visibleRoleLabels = array_diff_key(User::ROLE_LABELS, [User::ROLE_DEV_ADMIN => true]);
 
         $hierarchy = [];
         foreach ($visibleRoleLabels as $role => $label) {
-            if (User::rank($role) > User::rank($actor->role)) {
-                continue;
-            }
-            
             $hierarchy[] = [
                 'role'  => $label,
                 'count' => (new UserModel())->visibleTo($actor)->where('role', $role)->where('status', 'active')->countAllResults(),
@@ -164,20 +163,13 @@ class UsersController extends BaseController
         $actor = $this->currentUser();
         (new UserDraftModel())->pruneExpired();
 
-        $search = (string) ($this->request->getGet('q') ?? '');
-        $query  = (new UserDraftModel())->scopedTo($actor);
-        if ($search !== '') {
-            $query->groupStart()->like('name', $search)->orLike('phone', $search)->groupEnd();
-        }
-
         return view('users/drafts', [
             'title'      => 'Pending User Drafts',
             'activeTab'  => 'drafts',
             'draftCount' => $this->draftCount($actor),
-            'drafts'     => $query->orderBy('updated_at', 'DESC')->findAll(),
+            'drafts'     => (new UserDraftModel())->scopedTo($actor)->orderBy('updated_at', 'DESC')->findAll(),
             'roleLabels' => $this->visibleRoleLabels(),
             'actor'      => $actor,
-            'search'     => $search,
         ]);
     }
 
@@ -197,27 +189,6 @@ class UsersController extends BaseController
     private function draftCount(User $actor): int
     {
         return (new UserDraftModel())->scopedTo($actor)->countAllResults();
-    }
-
-    /**
-     * An admin typing a specific password for someone else (new user, or
-     * Reset password) is optional — blank still means "auto-generate a
-     * temp credential" — but a password they DO type has to meet the same
-     * strong-password policy as a self-chosen one. Returns an error
-     * message, or null when $password is blank or passes.
-     */
-    private function weakPasswordError(string $password): ?string
-    {
-        if ($password === '') {
-            return null;
-        }
-
-        $error = null;
-        if (! (new PasswordRules())->strong_password($password, $error)) {
-            return str_replace('{field}', 'Password', $error ?? 'Password is not strong enough.');
-        }
-
-        return null;
     }
 
      /**
@@ -595,14 +566,14 @@ class UsersController extends BaseController
             // New User form's autosave then resumes from localStorage
             // under that same id, recovering everything the admin typed
             // instead of losing it to this round trip.
-            return redirect()->to('/admin/users/new')->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to('/admin/users')->withInput()->with('errors', $this->validator->getErrors());
         }
 
         [$prantId, $jilaId, $prakhandId, $scopeAll, $prantIds, $jilaIds, $prakhandIds] = $this->resolveLocationFields($actor);
         $role = (string) $this->request->getPost('role');
 
         if ($error = $this->locationErrorFor($role, $prantId, $jilaId, $prakhandId, $scopeAll, $prantIds, $jilaIds, $prakhandIds)) {
-            return redirect()->to('/admin/users/new')->withInput()->with('error', $error);
+            return redirect()->to('/admin/users')->withInput()->with('error', $error);
         }
 
         // An admin can type a specific password for the account instead of
@@ -612,8 +583,8 @@ class UsersController extends BaseController
         // password later; a generated one is still a genuine one-time temp
         // credential, so first login still forces a change.
         $adminPassword = trim((string) $this->request->getPost('password'));
-        if ($error = $this->weakPasswordError($adminPassword)) {
-            return redirect()->to('/admin/users/new')->withInput()->with('error', $error);
+        if ($adminPassword !== '' && strlen($adminPassword) < 6) {
+            return redirect()->to('/admin/users/new')->withInput()->with('error', 'Password must be at least 6 characters.');
         }
         $tempPassword = $adminPassword !== '' ? $adminPassword : bin2hex(random_bytes(5));
         $phone        = preg_replace('/\D/', '', $this->request->getPost('phone'));
@@ -801,8 +772,8 @@ class UsersController extends BaseController
         }
 
         $adminPassword = trim((string) $this->request->getPost('password'));
-        if ($error = $this->weakPasswordError($adminPassword)) {
-            return redirect()->to('/admin/users/' . $id . '/password')->with('error', $error);
+        if ($adminPassword !== '' && strlen($adminPassword) < 6) {
+            return redirect()->to('/admin/users/' . $id . '/password')->with('error', 'Password must be at least 6 characters.');
         }
         $tempPassword = $adminPassword !== '' ? $adminPassword : bin2hex(random_bytes(5));
 
@@ -864,37 +835,6 @@ class UsersController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        // Prant/Jila/Prakhand filters narrow which created accounts this
-        // report covers — each is independently optional (a Jila or
-        // Prakhand filter alone still works without picking a Prant
-        // first), since this is a report over the target's own created
-        // users, not a cascading form.
-        $prantId    = (int) ($this->request->getGet('prant_id') ?: 0);
-        $jilaId     = (int) ($this->request->getGet('jila_id') ?: 0);
-        $prakhandId = (int) ($this->request->getGet('prakhand_id') ?: 0);
-
-        // Same joins as the Directory listing (index()) — locationLabelsFor()
-        // reads $u->prant_name/jila_name/prakhand_name, which only exist
-        // when these are present, and every joined table's own columns are
-        // qualified with `users.` below for the same reason noted there
-        // (prakhands has its own jila_id, for one).
-        $createdUsersQuery = (new UserModel())
-            ->select('users.*, prakhands.name AS prakhand_name, jilas.name AS jila_name, prants.name AS prant_name')
-            ->join('prakhands', 'prakhands.id = users.prakhand_id', 'left')
-            ->join('jilas', 'jilas.id = users.jila_id', 'left')
-            ->join('prants', 'prants.id = users.prant_id', 'left')
-            ->where('users.created_by', $id);
-        if ($prantId) {
-            $createdUsersQuery->where('users.prant_id', $prantId);
-        }
-        if ($jilaId) {
-            $createdUsersQuery->where('users.jila_id', $jilaId);
-        }
-        if ($prakhandId) {
-            $createdUsersQuery->where('users.prakhand_id', $prakhandId);
-        }
-
-
         $createdUsers = (new UserModel())->where('created_by', $id)->orderBy('name', 'ASC')->findAll();
 
         // "Done" means receipted — otp_pending/awaiting_payment rows
@@ -918,22 +858,12 @@ class UsersController extends BaseController
         }
 
         return view('users/activity', [
-            'title'            => 'Activity — ' . $target->name,
-            'target'           => $target,
-            'locationLabels'   => $this->locationLabelsFor($createdUsers),
-            'prants'           => (new PrantModel())->orderBy('name', 'ASC')->findAll(),
-            // Preloaded so a direct/bookmarked ?prant_id=&jila_id= link
-            // renders the right Jila/Prakhand options immediately,
-            // instead of an empty dropdown waiting on the cascade JS.
-            'jilas'            => $prantId ? (new JilaModel())->forPrant($prantId) : [],
-            'prakhands'        => $jilaId ? (new PrakhandModel())->forJila($jilaId) : [],
-            'filterPrantId'    => $prantId ?: null,
-            'filterJilaId'     => $jilaId ?: null,
-            'filterPrakhandId' => $prakhandId ?: null,
-            'roleLabels'       => User::ROLE_LABELS,
-            'createdUsers'     => $createdUsers,
-            'hcCountByUser'    => $hcCountByUser,
-            'totalHc'          => $totalHc,
+            'title'         => 'Activity — ' . $target->name,
+            'target'        => $target,
+            'roleLabels'    => User::ROLE_LABELS,
+            'createdUsers'  => $createdUsers,
+            'hcCountByUser' => $hcCountByUser,
+            'totalHc'       => $totalHc,
         ]);
     }
 
@@ -970,7 +900,6 @@ class UsersController extends BaseController
             'id'                 => $id,
             'created_by_user_id' => $existing['created_by_user_id'] ?? $actor->id,
             'name'               => trim((string) ($payload['name'] ?? '')) ?: null,
-            'phone'              => trim((string) ($payload['phone'] ?? '')) ?: null,
             'role'               => $payload['role'] ?? null,
             'payload'            => $payloadJson,
         ]);

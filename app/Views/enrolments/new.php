@@ -135,8 +135,8 @@
         <div class="field-note" id="phoneNote"><?= $forceSelf ? 'From your account' : '' ?></div>
       </div>
       <div class="field">
-        <label class="f-label"><?= esc($t['email']) ?><span class="required-mark">*</span></label>
-        <input class="f-input" id="emailInput" type="email" name="email" value="<?= esc(old('email') ?? '') ?>" placeholder="<?= esc($t['emailHelp']) ?>" required>
+        <label class="f-label"><?= esc($t['email']) ?></label>
+        <input class="f-input" id="emailInput" type="email" name="email" value="<?= esc(old('email') ?? '') ?>" placeholder="<?= esc($t['emailHelp']) ?>">
       </div>
       <div class="field" id="panField" style="display:none">
         <label class="f-label">PAN <span class="required-mark">*</span></label>
@@ -607,7 +607,7 @@
       if (!firstBad) { firstBad = ageOrDob; }
     }
     markRequired(addressInput, 'Address');
-    markRequired(emailInput, 'Email');
+    // markRequired(emailInput, 'Email');
     //markRequired(pincodeInput, 'PIN code');
 
     if (markRequired(memberPhone, 'Mobile number')) {

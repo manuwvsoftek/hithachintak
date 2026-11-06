@@ -18,10 +18,40 @@
 
 <div class="tabs">
   <a class="tab <?= $view === 'list' ? 'active' : '' ?>" href="<?= site_url('admin/enrolments') ?>">All Enrolments</a>
+  <a class="tab <?= $view === 'awaiting' ? 'active' : '' ?>" href="<?= site_url('admin/enrolments') ?>?view=awaiting">Awaiting Payment<?= $awaitingCount ? ' (' . $awaitingCount . ')' : '' ?></a>
   <a class="tab <?= $view === 'drafts' ? 'active' : '' ?>" href="<?= site_url('admin/enrolments') ?>?view=drafts">Pending Drafts<?= $draftCount ? ' (' . $draftCount . ')' : '' ?></a>
 </div>
 
-<?php if ($view === 'drafts'): ?>
+<?php if ($view === 'awaiting'): ?>
+<div class="panel">
+  <div class="panel-head">
+    <div>
+      <div class="panel-title">Awaiting Payment</div>
+      <div class="panel-note" style="margin-top:3px">Started but no payment confirmed yet — no receipt, and not counted in the register's totals until paid.</div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Member</th><th>Programme</th><th>Karyakarta</th><th>Status</th><th>Started</th><th></th></tr></thead>
+      <tbody>
+      <?php foreach ($awaiting as $e): ?>
+        <tr>
+          <td style="font-weight:700"><?= esc($e->member_name) ?></td>
+          <td><?= esc($e->programme_name) ?></td>
+          <td><?= esc($e->karyakarta_name) ?></td>
+          <td><span class="pill <?= status_pill_class($e->status) ?>"><?= esc(ucwords(str_replace('_', ' ', $e->status))) ?></span></td>
+          <td><?= esc(date('d M Y, g:i a', strtotime($e->created_at))) ?></td>
+          <td class="row-actions"><a class="btn btn-primary btn-sm" href="<?= enrolment_next_step_url($e) ?>">Continue</a></td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (! $awaiting): ?>
+        <tr><td colspan="6" class="panel-note">Nothing awaiting payment.</td></tr>
+      <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php elseif ($view === 'drafts'): ?>
 <div class="panel">
   <div class="panel-head">
     <div>
@@ -64,7 +94,7 @@
 <?php else: ?>
 
 <div class="kpi-grid">
-  <div class="kpi-card"><div class="kpi-label">Enrolments<?= $activeFilters ? ' (filtered)' : '' ?></div><div class="kpi-value num"><?= number_format($totalCount) ?></div></div>
+  <div class="kpi-card"><div class="kpi-label">Hithachintaks<?= $activeFilters ? ' (filtered)' : '' ?></div><div class="kpi-value num"><?= number_format($totalPersons) ?></div><div class="kpi-sub"><?= number_format($totalCount) ?> enrolments, incl. family</div></div>
   <div class="kpi-card"><div class="kpi-label">Total Amount</div><div class="kpi-value num"><?= fmt_rupees($totalAmount) ?></div></div>
   <div class="kpi-card"><div class="kpi-label">Via UPI / QR / Autopay</div><div class="kpi-value num"><?= fmt_rupees($upiAmount) ?></div></div>
   <div class="kpi-card"><div class="kpi-label">Via Cash</div><div class="kpi-value num"><?= fmt_rupees($cashAmount) ?></div></div>
@@ -84,7 +114,7 @@
       </select>
       <select name="status" class="js-auto-submit">
         <option value="">All statuses</option>
-        <?php foreach (['otp_pending', 'awaiting_payment', 'paid', 'cash_collected', 'cash_pending_remit', 'remitted'] as $s): ?>
+        <?php foreach (['paid', 'cash_collected', 'cash_pending_remit', 'remitted'] as $s): ?>
           <option value="<?= $s ?>" <?= ($_GET['status'] ?? '') === $s ? 'selected' : '' ?>><?= esc(ucwords(str_replace('_', ' ', $s))) ?></option>
         <?php endforeach; ?>
       </select>
