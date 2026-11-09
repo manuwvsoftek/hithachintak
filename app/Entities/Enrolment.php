@@ -17,8 +17,28 @@ class Enrolment extends Entity
     public const STATUS_FAILED             = 'failed';
     public const STATUS_CANCELLED          = 'cancelled';
 
-    /** Money has changed hands and a receipt exists — see hasReceipt(). The "paid" set shown in the Enrolments register and dashboard totals. */
+    /**
+     * A receipt has actually been issued — see hasReceipt(). Deliberately
+     * excludes cash_collected: Hithachintak cash sitting with a Karyakarta
+     * gets no receipt until they remit it onward (see
+     * EnrolmentService::markCashCollected()/confirmGatewayCashRemittance()),
+     * so counting it here would inflate the Enrolments register's headcount
+     * and Total Amount with money that isn't receipted yet. The "paid" set
+     * shown in the Enrolments register and the Dashboard's headcount.
+     */
     public const RECEIPTED_STATUSES = [
+        self::STATUS_PAID, self::STATUS_CASH_PENDING_REMIT, self::STATUS_REMITTED,
+    ];
+
+    /**
+     * Money already taken from the member, whether a receipt has been
+     * issued yet or not — RECEIPTED_STATUSES plus cash_collected (cash
+     * sitting with a Karyakarta, awaiting their own instant remittance).
+     * Use this for "money collected" figures (e.g. the Dashboard's Amount
+     * Collected tile); use RECEIPTED_STATUSES for anything that should
+     * only count enrolments with an actual receipt.
+     */
+    public const COLLECTED_STATUSES = [
         self::STATUS_PAID, self::STATUS_CASH_COLLECTED, self::STATUS_CASH_PENDING_REMIT, self::STATUS_REMITTED,
     ];
 

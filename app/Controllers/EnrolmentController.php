@@ -150,7 +150,7 @@ class EnrolmentController extends BaseController
         $sums = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
             ->select('
                 SUM(enrolments.amount) AS total_amount,
-                SUM(CASE WHEN enrolments.payment_mode IN ("upi","qr") THEN enrolments.amount ELSE 0 END) AS upi_amount,
+                SUM(CASE WHEN enrolments.payment_mode IN ("upi","qr","autopay") THEN enrolments.amount ELSE 0 END) AS upi_amount,
                 SUM(CASE WHEN enrolments.payment_mode = "cash" THEN enrolments.amount ELSE 0 END) AS cash_amount
             ', false)
             ->first();
