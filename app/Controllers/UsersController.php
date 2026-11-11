@@ -835,7 +835,25 @@ class UsersController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $createdUsers = (new UserModel())->where('created_by', $id)->orderBy('name', 'ASC')->findAll();
+        // Narrows to created users whose own location matches — most
+        // specific selected tier wins, but all three are safe to apply
+        // together since a user's own prant_id/jila_id/prakhand_id are
+        // already mutually consistent.
+        $filterPrantId    = $this->request->getGet('prant_id') ? (int) $this->request->getGet('prant_id') : null;
+        $filterJilaId     = $this->request->getGet('jila_id') ? (int) $this->request->getGet('jila_id') : null;
+        $filterPrakhandId = $this->request->getGet('prakhand_id') ? (int) $this->request->getGet('prakhand_id') : null;
+
+        $createdUsersQuery = (new UserModel())->where('created_by', $id);
+        if ($filterPrantId) {
+            $createdUsersQuery->where('prant_id', $filterPrantId);
+        }
+        if ($filterJilaId) {
+            $createdUsersQuery->where('jila_id', $filterJilaId);
+        }
+        if ($filterPrakhandId) {
+            $createdUsersQuery->where('prakhand_id', $filterPrakhandId);
+        }
+        $createdUsers = $createdUsersQuery->orderBy('name', 'ASC')->findAll();
 
         // "Done" means receipted — otp_pending/awaiting_payment rows
         // never collected anything, so they don't count here.
@@ -858,12 +876,18 @@ class UsersController extends BaseController
         }
 
         return view('users/activity', [
-            'title'         => 'Activity — ' . $target->name,
-            'target'        => $target,
-            'roleLabels'    => User::ROLE_LABELS,
-            'createdUsers'  => $createdUsers,
-            'hcCountByUser' => $hcCountByUser,
-            'totalHc'       => $totalHc,
+            'title'            => 'Activity — ' . $target->name,
+            'target'           => $target,
+            'roleLabels'       => User::ROLE_LABELS,
+            'createdUsers'     => $createdUsers,
+            'hcCountByUser'    => $hcCountByUser,
+            'totalHc'          => $totalHc,
+            'prants'           => (new PrantModel())->orderBy('name', 'ASC')->findAll(),
+            'jilas'            => $filterPrantId ? (new JilaModel())->forPrant($filterPrantId) : [],
+            'prakhands'        => $filterJilaId ? (new PrakhandModel())->forJila($filterJilaId) : [],
+            'filterPrantId'    => $filterPrantId,
+            'filterJilaId'     => $filterJilaId,
+            'filterPrakhandId' => $filterPrakhandId,
         ]);
     }
 
