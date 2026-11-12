@@ -105,12 +105,66 @@ class ReportController extends BaseController
         return $valid ?: self::DEFAULT_FIELDS;
     }
 
-    private function reportRows($actor): array
+    /**
+     * Streams every row (one per person — head of family, then each
+     * family member) in DB-side batches of 200 enrolments, calling $sink
+     * once per row. Keeps peak PHP memory bounded to one batch's worth
+     * instead of materializing the whole filtered set as one array of
+     * cloned Entity objects — across a campaign this size (tens of
+     * thousands of Hithachintak enrolments), that array, doubled by
+     * expandWithFamilyMembers() turning every enrolment into multiple
+     * rows, is exactly what exhausts the 128MB memory limit on export.
+     *
+     * Hand-rolled LIMIT/OFFSET rather than the framework's own Model::
+     * chunk() — that method has long-standing reports of returning plain
+     * stdClass instead of the model's Entity class, and of pagination
+     * not interacting safely with orderBy() (risking rows silently
+     * skipped or duplicated across batch boundaries). created_at alone
+     * isn't a unique sort key — two enrolments can share the same
+     * second — so id is added as an explicit tiebreaker to keep this
+     * loop's own pagination deterministic.
+     */
+    private function streamReportRows($actor, callable $sink): void
     {
-        $rows = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
-            ->orderBy('enrolments.created_at', 'DESC')->findAll();
+        $batchSize = 200;
+        $offset    = 0;
 
-        return $this->expandWithFamilyMembers($rows);
+        while (true) {
+            $chunk = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
+                ->orderBy('enrolments.created_at', 'DESC')
+                ->orderBy('enrolments.id', 'DESC')
+                ->findAll($batchSize, $offset);
+
+            if (! $chunk) {
+                break;
+            }
+
+            foreach ($this->expandWithFamilyMembers($chunk) as $row) {
+                $sink($row);
+            }
+
+            if (count($chunk) < $batchSize) {
+                break;
+            }
+
+            $offset += $batchSize;
+        }
+    }
+
+    /**
+     * Collects every streamed row into one array — only for exportPdf(),
+     * since Mpdf needs the whole HTML string built up front regardless;
+     * CSV and Excel write each row out as it streams, never holding the
+     * full set in memory at once (see exportCsv()/exportExcel()).
+     */
+    private function collectReportRows($actor): array
+    {
+        $rows = [];
+        $this->streamReportRows($actor, static function ($row) use (&$rows) {
+            $rows[] = $row;
+        });
+
+        return $rows;
     }
 
     /**
@@ -296,13 +350,12 @@ class ReportController extends BaseController
     public function exportCsv()
     {
         $fields = $this->selectedFields();
-        $rows   = $this->reportRows($this->currentUser());
 
         $out = fopen('php://temp', 'w+');
         fputcsv($out, array_map(fn ($f) => self::FIELD_CATALOG[$f], $fields));
-        foreach ($rows as $r) {
+        $this->streamReportRows($this->currentUser(), static function ($r) use ($out, $fields) {
             fputcsv($out, array_map(static fn ($f) => report_field_value($r, $f), $fields));
-        }
+        });
         rewind($out);
         $csv = stream_get_contents($out);
         fclose($out);
@@ -315,8 +368,15 @@ class ReportController extends BaseController
 
     public function exportExcel()
     {
+        // PhpSpreadsheet's own per-cell overhead scales with row count
+        // regardless of how rows are fetched — streaming the DB side
+        // (below) avoids ALSO holding a full duplicate PHP array of rows
+        // in memory, but this export can still legitimately need more
+        // than the default 128M once a filtered set runs into the tens
+        // of thousands of people. Scoped to this request only.
+        ini_set('memory_limit', '512M');
+
         $fields = $this->selectedFields();
-        $rows   = $this->reportRows($this->currentUser());
 
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
@@ -327,10 +387,10 @@ class ReportController extends BaseController
         $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->getFont()->setBold(true);
 
         $rowNum = 2;
-        foreach ($rows as $r) {
+        $this->streamReportRows($this->currentUser(), function ($r) use ($sheet, $fields, &$rowNum) {
             $sheet->fromArray(array_map(static fn ($f) => report_field_value($r, $f), $fields), null, 'A' . $rowNum);
             $rowNum++;
-        }
+        });
         foreach (range('A', $sheet->getHighestColumn()) as $col) {
             $sheet->getColumnDimension($col)->setWidth(20);
         }
@@ -348,8 +408,16 @@ class ReportController extends BaseController
 
     public function exportPdf()
     {
+        // Mpdf needs the whole HTML string up front, so unlike the CSV/
+        // Excel exports this one can't avoid holding every row (and the
+        // HTML built from them) in memory at once — streaming the DB
+        // fetch still avoids doubling that via a second buffered result
+        // set, but very large filtered sets are still heavier here than
+        // as CSV/Excel. Prefer those two for a full, unfiltered export.
+        ini_set('memory_limit', '512M');
+
         $fields = $this->selectedFields();
-        $rows   = $this->reportRows($this->currentUser());
+        $rows   = $this->collectReportRows($this->currentUser());
 
         $html = view('reports/pdf', [
             'fieldCatalog' => self::FIELD_CATALOG,
