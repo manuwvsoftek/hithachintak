@@ -115,14 +115,24 @@ class ReportController extends BaseController
 
     /**
      * One row per person instead of one row per enrolment — the head of
-     * family's own row, unchanged, followed by one additional row per
-     * family member added at the same sitting. Every enrolment-level
-     * column (receipt_no, programme, location, Karyakarta, amount,
-     * status, dates) is shared/duplicated across all of a group's rows,
-     * since they're genuinely one transaction/receipt covering several
-     * people — only member_name/member_phone/member_type vary per row.
-     * Family members have no email/PAN of their own, so those columns
-     * come back blank on their rows.
+     * family's own row, followed by one additional row per family member
+     * added at the same sitting. Every enrolment-level column (receipt_no,
+     * programme, location, Karyakarta, status, dates) is shared/duplicated
+     * across all of a group's rows, since they're genuinely one
+     * transaction/receipt covering several people — member_name/
+     * member_phone/member_type/amount vary per row. Family members have
+     * no email/PAN of their own, so those columns come back blank on
+     * their rows.
+     *
+     * Amount is split evenly across the group (for Hithachintak this
+     * lands exactly on the per-head rate, since that's how the amount was
+     * computed in the first place — see EnrolmentService::start()) rather
+     * than repeating the full enrolment amount on every row, which would
+     * make a spreadsheet SUM() of the Amount column overcount by however
+     * many family members exist. Equal division can leave a rounding
+     * remainder (e.g. ₹100 / 3 = ₹33.33, and 3 × ₹33.33 = ₹99.99) — the
+     * head of family's row absorbs that remainder, so the group's rows
+     * always add back up to exactly the original amount.
      *
      * @param list<\App\Entities\Enrolment> $rows
      * @return list<\App\Entities\Enrolment>
@@ -138,16 +148,23 @@ class ReportController extends BaseController
 
         $expanded = [];
         foreach ($rows as $row) {
+            $members   = $grouped[$row->id] ?? [];
+            $headCount = 1 + count($members);
+            $total     = (float) $row->amount;
+            $share     = $headCount > 1 ? round($total / $headCount, 2) : $total;
+
             $row->member_type = 'Head of Family';
+            $row->amount      = $headCount > 1 ? round($total - $share * ($headCount - 1), 2) : $total;
             $expanded[]        = $row;
 
-            foreach ($grouped[$row->id] ?? [] as $fm) {
+            foreach ($members as $fm) {
                 $familyRow               = clone $row;
                 $familyRow->member_type  = 'Family Member';
                 $familyRow->member_name  = trim((string) ($fm['name'] ?? ''));
                 $familyRow->member_phone = $fm['contact_number'] ?? null;
                 $familyRow->member_email = null;
                 $familyRow->member_pan   = null;
+                $familyRow->amount       = $share;
                 $expanded[]              = $familyRow;
             }
         }
