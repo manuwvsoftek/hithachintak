@@ -43,7 +43,7 @@ class ReportController extends BaseController
 
     private const DEFAULT_FIELDS = [
         'receipt_no', 'member_name', 'programme_name', 'prant_name', 'jila_name',
-        'karyakarta_name', 'amount', 'payment_mode', 'status', 'created_at',
+        'karyakarta_name', 'amount', 'payment_mode', 'status', 'created_at', 'family_members',
     ];
 
     private const FILTER_KEYS = ['q', 'programme', 'status', 'mode', 'from', 'to', 'prant_id', 'jila_id', 'prakhand_id', 'karyakarta_id'];
@@ -183,6 +183,18 @@ class ReportController extends BaseController
         $totalAmount   = (float) ($sums?->total_amount ?? 0);
         $cashCollected = (float) ($sums?->cash_amount ?? 0);
 
+        // Headcount including family members — a single enrolment row can
+        // cover several people (the head of family plus each additional
+        // member added at the same sitting), so the row count alone
+        // undercounts how many people this filtered report actually
+        // covers. A plain aggregate (no GROUP BY) always collapses to
+        // exactly one row, so this is safe regardless of table size.
+        $headcount = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
+            ->join('enrolment_family_members efm', 'efm.enrolment_id = enrolments.id', 'left')
+            ->select('COUNT(DISTINCT enrolments.id) AS enrolment_count, COUNT(efm.id) AS family_count', false)
+            ->first();
+        $totalPersons = (int) ($headcount->enrolment_count ?? 0) + (int) ($headcount->family_count ?? 0);
+
         // Cash actually remitted is tracked on cash_remittances, not
         // inferred from the enrolment's own status, for an accurate
         // reconciliation figure — same set of collectors as the filtered
@@ -203,6 +215,7 @@ class ReportController extends BaseController
             'rows'          => $rows,
             'pager'         => $pager,
             'totalCount'    => $pager->getTotal(),
+            'totalPersons'  => $totalPersons,
             'totalAmount'   => $totalAmount,
             'programmes'    => (new ProgrammeModel())->active(),
             'prants'        => (new PrantModel())->orderBy('name', 'ASC')->findAll(),

@@ -14,7 +14,7 @@ $exportQuery   = http_build_query($_GET);
 </div>
 
 <div class="kpi-grid">
-  <div class="kpi-card"><div class="kpi-label">Records<?= $activeFilters ? ' (filtered)' : '' ?></div><div class="kpi-value num"><?= number_format($totalCount) ?></div></div>
+  <div class="kpi-card"><div class="kpi-label">Records<?= $activeFilters ? ' (filtered)' : '' ?></div><div class="kpi-value num"><?= number_format($totalPersons) ?></div><div class="kpi-sub"><?= number_format($totalCount) ?> enrolments, incl. family</div></div>
   <div class="kpi-card"><div class="kpi-label">Total Amount</div><div class="kpi-value num"><?= fmt_rupees($totalAmount) ?></div></div>
 </div>
 
