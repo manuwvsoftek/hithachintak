@@ -20,10 +20,11 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ReportController extends BaseController
 {
-    /** Every field a report can include — key => column selected by EnrolmentModel::withDetails(). */
+    /** Every field a report can include — key => column selected by EnrolmentModel::withDetails(), or synthesized by expandWithFamilyMembers(). */
     private const FIELD_CATALOG = [
         'receipt_no'      => 'Receipt No',
         'member_name'     => 'Member Name',
+        'member_type'     => 'Member Type',
         'member_phone'    => 'Member Phone',
         'member_email'    => 'Member Email',
         'member_pan'      => 'Member PAN',
@@ -38,12 +39,11 @@ class ReportController extends BaseController
         'language'        => 'Language',
         'created_at'      => 'Enrolled On',
         'paid_at'         => 'Paid On',
-        'family_members'  => 'Family Members',
     ];
 
     private const DEFAULT_FIELDS = [
-        'receipt_no', 'member_name', 'programme_name', 'prant_name', 'jila_name',
-        'karyakarta_name', 'amount', 'payment_mode', 'status', 'created_at', 'family_members',
+        'receipt_no', 'member_name', 'member_type', 'programme_name', 'prant_name', 'jila_name',
+        'karyakarta_name', 'amount', 'payment_mode', 'status', 'created_at',
     ];
 
     private const FILTER_KEYS = ['q', 'programme', 'status', 'mode', 'from', 'to', 'prant_id', 'jila_id', 'prakhand_id', 'karyakarta_id'];
@@ -110,23 +110,24 @@ class ReportController extends BaseController
         $rows = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
             ->orderBy('enrolments.created_at', 'DESC')->findAll();
 
-        if (in_array('family_members', $this->selectedFields(), true)) {
-            $rows = $this->attachFamilyMembers($rows);
-        }
-
-        return $rows;
+        return $this->expandWithFamilyMembers($rows);
     }
 
     /**
-     * Attaches a joined "Name (Age), Name (Age), …" string as
-     * $row->family_members for every row, in one batched query — family
-     * members live in their own table, so unlike every other report
-     * field this can't come from EnrolmentModel::withDetails()'s joins.
+     * One row per person instead of one row per enrolment — the head of
+     * family's own row, unchanged, followed by one additional row per
+     * family member added at the same sitting. Every enrolment-level
+     * column (receipt_no, programme, location, Karyakarta, amount,
+     * status, dates) is shared/duplicated across all of a group's rows,
+     * since they're genuinely one transaction/receipt covering several
+     * people — only member_name/member_phone/member_type vary per row.
+     * Family members have no email/PAN of their own, so those columns
+     * come back blank on their rows.
      *
      * @param list<\App\Entities\Enrolment> $rows
      * @return list<\App\Entities\Enrolment>
      */
-    private function attachFamilyMembers(array $rows): array
+    private function expandWithFamilyMembers(array $rows): array
     {
         if (! $rows) {
             return $rows;
@@ -135,17 +136,23 @@ class ReportController extends BaseController
         $ids     = array_map(static fn ($row) => $row->id, $rows);
         $grouped = (new EnrolmentFamilyMemberModel())->forEnrolments($ids);
 
+        $expanded = [];
         foreach ($rows as $row) {
-            $members = $grouped[$row->id] ?? [];
-            $row->family_members = $members
-                ? implode(', ', array_map(
-                    static fn ($fm) => trim($fm['name'] . (($fm['age_or_dob'] ?? '') !== '' ? ' (' . $fm['age_or_dob'] . ')' : '')),
-                    $members
-                ))
-                : '—';
+            $row->member_type = 'Head of Family';
+            $expanded[]        = $row;
+
+            foreach ($grouped[$row->id] ?? [] as $fm) {
+                $familyRow               = clone $row;
+                $familyRow->member_type  = 'Family Member';
+                $familyRow->member_name  = trim((string) ($fm['name'] ?? ''));
+                $familyRow->member_phone = $fm['contact_number'] ?? null;
+                $familyRow->member_email = null;
+                $familyRow->member_pan   = null;
+                $expanded[]              = $familyRow;
+            }
         }
 
-        return $rows;
+        return $expanded;
     }
 
     public function index()
@@ -170,9 +177,7 @@ class ReportController extends BaseController
         $rows  = $model->orderBy('enrolments.created_at', 'DESC')->paginate(25);
         $pager = $model->pager;
 
-        if (in_array('family_members', $this->selectedFields(), true)) {
-            $rows = $this->attachFamilyMembers($rows);
-        }
+        $rows = $this->expandWithFamilyMembers($rows);
 
         $sums = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
             ->select('
