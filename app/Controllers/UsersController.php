@@ -49,6 +49,26 @@ class UsersController extends BaseController
             $query->groupStart()->like('users.name', $search)->orLike('users.phone', $search)->groupEnd();
         }
 
+        // Filters by the row's own fixed prant_id/jila_id/prakhand_id —
+        // same columns the directory table's own Location cell reads for
+        // a single-location role (Karyakarta, Prakhand Admin). A
+        // multi-location role (e.g. a Pranta Admin with several assigned
+        // Prants via scope_all/junction tables) is found by this filter
+        // only through its own single prant_id/jila_id/prakhand_id
+        // column, same limitation locationLabelsFor() already has.
+        $filterPrantId    = $this->request->getGet('prant_id') ? (int) $this->request->getGet('prant_id') : null;
+        $filterJilaId     = $this->request->getGet('jila_id') ? (int) $this->request->getGet('jila_id') : null;
+        $filterPrakhandId = $this->request->getGet('prakhand_id') ? (int) $this->request->getGet('prakhand_id') : null;
+        if ($filterPrantId) {
+            $query->where('users.prant_id', $filterPrantId);
+        }
+        if ($filterJilaId) {
+            $query->where('users.jila_id', $filterJilaId);
+        }
+        if ($filterPrakhandId) {
+            $query->where('users.prakhand_id', $filterPrakhandId);
+        }
+
         $users = $query->orderBy('users.created_at', 'DESC')->paginate(25);
         $locationLabels = $this->locationLabelsFor($users);
         $canManageMap   = $this->canManageMap($actor, $users);
@@ -93,6 +113,11 @@ class UsersController extends BaseController
             'canManageMap' => $canManageMap,
             'hierarchy'  => $hierarchy,
             'prants'     => $prants,
+            'jilas'      => $filterPrantId ? (new JilaModel())->forPrant($filterPrantId) : [],
+            'prakhands'  => $filterJilaId ? (new PrakhandModel())->forJila($filterJilaId) : [],
+            'filterPrantId'    => $filterPrantId,
+            'filterJilaId'     => $filterJilaId,
+            'filterPrakhandId' => $filterPrakhandId,
             'actorPrants' => $this->actorPrantOptions($actor, $prants),
             'roleLabels' => $visibleRoleLabels,
             'hasGlobalAccess' => $actor->hasGlobalAccess(),

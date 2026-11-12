@@ -23,16 +23,54 @@
       <div class="panel-note" style="margin-top:3px">Blocking an account restricts login access only — no enrolment, collection or receipt data is deleted.</div>
     </div>
   </div>
-  <form class="filter-row" method="get">
+  <form class="filter-row" method="get" id="userDirectoryFilter">
     <select name="role" class="js-auto-submit">
       <option value="">All roles</option>
       <?php foreach ($roleLabels as $code => $label): ?>
         <option value="<?= $code ?>" <?= ($_GET['role'] ?? '') === $code ? 'selected' : '' ?>><?= esc($label) ?></option>
       <?php endforeach; ?>
     </select>
+    <select name="prant_id" id="filterPrant" class="js-auto-submit">
+      <option value="">All Prants</option>
+      <?php foreach ($prants as $p): ?>
+        <option value="<?= $p['id'] ?>" <?= $filterPrantId === (int) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+      <?php endforeach; ?>
+    </select>
+    <select name="jila_id" id="filterJila" class="js-auto-submit">
+      <option value="">All Jilas</option>
+      <?php foreach ($jilas as $j): ?>
+        <option value="<?= $j['id'] ?>" <?= $filterJilaId === (int) $j['id'] ? 'selected' : '' ?>><?= esc($j['name']) ?></option>
+      <?php endforeach; ?>
+    </select>
+    <select name="prakhand_id" id="filterPrakhand" class="js-auto-submit">
+      <option value="">All Prakhands</option>
+      <?php foreach ($prakhands as $pk): ?>
+        <option value="<?= $pk['id'] ?>" <?= $filterPrakhandId === (int) $pk['id'] ? 'selected' : '' ?>><?= esc($pk['name']) ?></option>
+      <?php endforeach; ?>
+    </select>
     <input type="text" name="q" placeholder="Search name or phone" value="<?= esc($_GET['q'] ?? '') ?>">
     <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+    <?php if ($filterPrantId || $filterJilaId || $filterPrakhandId): ?>
+      <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users') ?>">Clear filters</a>
+    <?php endif; ?>
   </form>
+
+  <script <?= csp_script_nonce() ?>>
+  (function(){
+    // A changed Prant/Jila invalidates whatever was picked downstream —
+    // clearing it before the auto-submit (see app.js's .js-auto-submit)
+    // keeps a stale Jila/Prakhand id from riding along with the new Prant.
+    var prant = document.getElementById('filterPrant');
+    var jila = document.getElementById('filterJila');
+    var prakhand = document.getElementById('filterPrakhand');
+    if (prant) {
+      prant.addEventListener('change', function(){ jila.value = ''; prakhand.value = ''; });
+    }
+    if (jila) {
+      jila.addEventListener('change', function(){ prakhand.value = ''; });
+    }
+  })();
+  </script>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Location</th><th>Created By</th><th>Status</th><th></th></tr></thead>

@@ -18,7 +18,8 @@ Sector 6, Ramkrishna puram,  Delhi 110022 <br>
 Email: <a href="mailto:gopalmvhp@gmail.com">gopalmvhp@gmail.com</a> <br>
 Phone: <a href="tel:9448284629">9448284629</a></p>
 
-<p><b>3.</b>  We have no pricing / specific demand for donations from anyone. Free will donation is accepted wholeheartedly.</p><br><br><br><br>
+<p><b>3.</b>  We have no pricing / specific demand for donations from anyone. Free will donation is accepted wholeheartedly.</p>
+<p><b>4.</b> No 80G or tax exemption benefits will be guaranteed to the end users or donors.</p><br><br><br><br>
 <div class="row-actions" style="margin-top:18px">
     <a class="btn btn-ghost btn-sm" href="<?= site_url('/') ?>">Back</a>
   </div>
