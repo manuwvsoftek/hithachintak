@@ -5,7 +5,7 @@
 
 
 <div class="panel">
-  <div class="panel-head"><div class="panel-title">Access Hierarchy</div><span class="panel-note">Count of active users per level</span></div>
+  <div class="panel-head"><div class="panel-title">Access Hierarchy</div><span class="panel-note">Count of active users per level<?= ($filterPrantId || $filterJilaId || $filterPrakhandId || ($_GET['q'] ?? '')) ? ' (filtered)' : '' ?></span></div>
   <div class="kpi-grid">
     <?php foreach ($hierarchy as $h): ?>
       <div class="kpi-card">

@@ -79,11 +79,29 @@ class UsersController extends BaseController
         // surfaced to anyone through this page at all.
         $visibleRoleLabels = array_diff_key(User::ROLE_LABELS, [User::ROLE_DEV_ADMIN => true]);
 
+        // Same location/search scope as the directory table below, so the
+        // two always agree — the role filter is deliberately left out
+        // here, since this panel's whole point is the breakdown ACROSS
+        // roles; applying it would zero out every row but the one
+        // already selected in the table above.
         $hierarchy = [];
-        foreach ($visibleRoleLabels as $role => $label) {
+        foreach ($visibleRoleLabels as $roleKey => $label) {
+            $countQuery = (new UserModel())->visibleTo($actor)->where('role', $roleKey)->where('status', 'active');
+            if ($filterPrantId) {
+                $countQuery->where('prant_id', $filterPrantId);
+            }
+            if ($filterJilaId) {
+                $countQuery->where('jila_id', $filterJilaId);
+            }
+            if ($filterPrakhandId) {
+                $countQuery->where('prakhand_id', $filterPrakhandId);
+            }
+            if ($search) {
+                $countQuery->groupStart()->like('name', $search)->orLike('phone', $search)->groupEnd();
+            }
             $hierarchy[] = [
                 'role'  => $label,
-                'count' => (new UserModel())->visibleTo($actor)->where('role', $role)->where('status', 'active')->countAllResults(),
+                'count' => $countQuery->countAllResults(),
             ];
         }
 
