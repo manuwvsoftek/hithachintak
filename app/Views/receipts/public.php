@@ -35,7 +35,7 @@
         <?php foreach ($householdRows as $i => $row): ?>
           <tr>
             <td class="num"><?= $i + 1 ?></td>
-            <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?><span class="head-tag">(<?php //($t['headOfFamily']) ?>)</span><?php endif; ?></td>
+            <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?><span class="head-tag"><?php //($t['headOfFamily']) ?></span><?php endif; ?></td>
             <td><?= esc($row['age_or_dob'] ?: '—') ?></td>
             <td><?= esc($row['profession'] ?: '—') ?></td>
           </tr>
