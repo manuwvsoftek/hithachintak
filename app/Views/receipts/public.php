@@ -21,7 +21,7 @@
       <div class="r"><span><?= esc($t['programme']) ?></span><span><?= esc($programme['name']) ?></span></div>
       <div class="r"><span><?= esc($t['prant']) ?></span><span><?= esc($prant['name']) ?></span></div>
       <div class="r"><span><?= esc($t['trust']) ?></span><span><?= esc($trustName) ?></span></div>
-      <div class="r"><span><?= esc($t['pan']) ?></span><span class="num"><?= esc($trustPan) ?></span></div>
+      <!-- <div class="r"><span><?= esc($t['pan']) ?></span><span class="num"><?= esc($trustPan) ?></span></div> -->
       <div class="r"><span><?= esc($t['date']) ?></span><span><?= esc(date('d M Y', strtotime($enrolment->paid_at ?? $enrolment->created_at))) ?></span></div>
       <div class="r"><span><?= esc($t['mode']) ?></span><span><?= esc(ucfirst($enrolment->payment_mode ?? '—')) ?></span></div>
       <div class="r"><span><?= esc($t['collectedBy']) ?></span><span><?= esc($collectedBy) ?></span></div>
@@ -35,7 +35,7 @@
         <?php foreach ($householdRows as $i => $row): ?>
           <tr>
             <td class="num"><?= $i + 1 ?></td>
-            <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?><span class="head-tag">(<?= esc($t['headOfFamily']) ?>)</span><?php endif; ?></td>
+            <td><?= esc($row['name']) ?><?php if ($row['isHead']): ?><span class="head-tag">(<?php //($t['headOfFamily']) ?>)</span><?php endif; ?></td>
             <td><?= esc($row['age_or_dob'] ?: '—') ?></td>
             <td><?= esc($row['profession'] ?: '—') ?></td>
           </tr>
