@@ -79,13 +79,29 @@ class UsersController extends BaseController
         // surfaced to anyone through this page at all.
         $visibleRoleLabels = array_diff_key(User::ROLE_LABELS, [User::ROLE_DEV_ADMIN => true]);
 
+        // The Access Hierarchy cards below are scoped tighter than the
+        // role-filter dropdown: a Jila Admin's own rank-and-below roles
+        // (Jila Admin, Prakhand Admin, Karyakarta) are real breakdowns,
+        // but a card for Super Admin/Kendreeya Admin/Pranta Admin would
+        // only ever show a permanent 0 — visibleTo() can never surface
+        // those rows to them — so those cards are left off entirely
+        // rather than shown empty. Only a global-access actor sees the
+        // full hierarchy, top to bottom.
+        $hierarchyRoleLabels = $actor->hasGlobalAccess()
+            ? $visibleRoleLabels
+            : array_filter(
+                $visibleRoleLabels,
+                static fn ($label, $roleKey) => User::rank($roleKey) <= User::rank($actor->role),
+                ARRAY_FILTER_USE_BOTH
+            );
+
         // Same location/search scope as the directory table below, so the
         // two always agree — the role filter is deliberately left out
         // here, since this panel's whole point is the breakdown ACROSS
         // roles; applying it would zero out every row but the one
         // already selected in the table above.
         $hierarchy = [];
-        foreach ($visibleRoleLabels as $roleKey => $label) {
+        foreach ($hierarchyRoleLabels as $roleKey => $label) {
             $countQuery = (new UserModel())->visibleTo($actor)->where('role', $roleKey)->where('status', 'active');
             if ($filterPrantId) {
                 $countQuery->where('prant_id', $filterPrantId);
