@@ -357,7 +357,20 @@
       setUpAutosave();
     }
 
-    if (!prantSelect && (jilaSelect || jilaMulti) && actorPrant && actorPrant !== '0') {
+    if (!prantSelect && jilaSelect && jilaSelect.options.length > 1) {
+      // Already pre-rendered server-side with the actor's own restricted
+      // Jila list (a multi-Jila Sub Admin's own tier — see
+      // actorJilaOptions()), not just a placeholder — loading from the
+      // API here would overwrite it with every Jila in the Prant,
+      // unrestricted. Only the already-selected value (Edit form) needs
+      // Prakhands fetched; a fresh New form selection fires the regular
+      // change listener below once the admin actually picks one.
+      if (jilaSelect.value) {
+        loadPrakhands(jilaSelect.value, afterInitialLoad);
+      } else {
+        afterInitialLoad();
+      }
+    } else if (!prantSelect && (jilaSelect || jilaMulti) && actorPrant && actorPrant !== '0') {
       loadJilas(actorPrant, function () {
         if (actorJila && actorJila !== '0' && jilaSelect) {
           jilaSelect.value = actorJila;
@@ -368,6 +381,14 @@
           afterInitialLoad();
         }
       });
+    } else if (!prantSelect && !jilaSelect && !jilaMulti && prakhandSelect && prakhandSelect.options.length > 1) {
+      // Already pre-rendered server-side with the actor's own restricted
+      // Prakhand list (a multi-Prakhand Prakhand Admin's own tier — see
+      // actorPrakhandOptions()), not just a placeholder — loading from the
+      // API here would overwrite it with every Prakhand in the Jila,
+      // unrestricted. Nothing cascades below Prakhand, so there's no
+      // grandchild fetch to chain here.
+      afterInitialLoad();
     } else if (!prantSelect && !jilaSelect && !jilaMulti && (prakhandSelect || prakhandMulti) && actorJila && actorJila !== '0') {
       loadPrakhands(actorJila, afterInitialLoad);
     } else if (prantSelect && prantSelect.value) {

@@ -190,6 +190,8 @@ class UsersController extends BaseController
             'draftCount' => $this->draftCount($actor),
             'prants'     => $prants,
             'actorPrants' => $this->actorPrantOptions($actor, $prants),
+            'actorJilas' => $this->actorJilaOptions($actor),
+            'actorPrakhands' => $this->actorPrakhandOptions($actor),
             'roleLabels' => $this->visibleRoleLabels(),
             'hasGlobalAccess' => $actor->hasGlobalAccess(),
             'manageableRoles' => $this->manageableRoles($actor),
@@ -372,8 +374,63 @@ class UsersController extends BaseController
         return array_values(array_filter($allPrants, static fn ($p) => in_array((int) $p['id'], $ids, true)));
     }
 
+    /**
+     * A Jila Admin (Sub Admin) assigned to more than one Jila (within
+     * their one fixed Prant) needs a picker on the New/Edit User form
+     * when creating/editing a Prakhand Admin, instead of the usual fixed
+     * "your Jila" text — mirrors actorPrantOptions() one tier down. Null
+     * when a fixed single Jila is enough (every other actor, and a Sub
+     * Admin assigned to exactly one Jila).
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function actorJilaOptions(User $actor): ?array
+    {
+        if ($actor->role !== User::ROLE_SUB_ADMIN) {
+            return null;
+        }
 
-    
+        $ids          = LocationScope::jilaIds($actor);
+        $jilasInPrant = $actor->prant_id ? (new JilaModel())->forPrant($actor->prant_id) : [];
+        if ($ids === null) {
+            return $jilasInPrant; // scope_all — any Jila in their Prant is fair game
+        }
+        if (count($ids) <= 1) {
+            return null; // exactly one assigned Jila — the fixed text is enough
+        }
+
+        return array_values(array_filter($jilasInPrant, static fn ($j) => in_array((int) $j['id'], $ids, true)));
+    }
+
+    /**
+     * A Prakhand Admin assigned to more than one Prakhand (within their
+     * one fixed Jila) needs a picker on the New/Edit User form when
+     * creating/editing a Karyakarta, instead of the usual fixed "your
+     * Prakhand" text — mirrors actorJilaOptions() one tier down. Null
+     * when a fixed single Prakhand is enough (every other actor, and a
+     * Prakhand Admin assigned to exactly one Prakhand).
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function actorPrakhandOptions(User $actor): ?array
+    {
+        if ($actor->role !== User::ROLE_PRAKHAND_ADMIN) {
+            return null;
+        }
+
+        $ids             = LocationScope::prakhandIds($actor);
+        $prakhandsInJila = $actor->jila_id ? (new PrakhandModel())->forJila($actor->jila_id) : [];
+        if ($ids === null) {
+            return $prakhandsInJila; // scope_all — any Prakhand in their Jila is fair game
+        }
+        if (count($ids) <= 1) {
+            return null; // exactly one assigned Prakhand — the fixed text is enough
+        }
+
+        return array_values(array_filter($prakhandsInJila, static fn ($p) => in_array((int) $p['id'], $ids, true)));
+    }
+
+
 
     /** Loads a target user, but only if $actor is allowed to manage them (in-scope and outranked). Returns null otherwise. */
     private function manageableTarget(User $actor, int $id): ?User
@@ -446,11 +503,14 @@ class UsersController extends BaseController
 
       /**
      * The Jila a user being created/edited belongs to — mirrors
-     * resolveActorPrantId() one tier down. A Jila Admin (Sub Admin) or
-     * Prakhand Admin actor is fixed to their own single Jila (trusted,
-     * never the raw POST value). A Vibhag Admin actor picks from their
-     * own assigned Jila set, with the same "the posted value must
-     * actually be one of their own" guard. Every other actor (global
+     * resolveActorPrantId() one tier down. A Prakhand Admin actor is
+     * fixed to their own single Jila (trusted, never the raw POST
+     * value) — that tier has no multi-select of its own. A Jila Admin
+     * (Sub Admin) actor assigned to more than one Jila (multi-select, or
+     * "All Jilas" in their Prant) instead picks from a form field, with
+     * the same "the posted value must actually be one of their own"
+     * guard resolveActorPrantId() uses; one assigned to exactly one Jila
+     * stays fixed to it, same as before. Every other actor (global
      * access, Pranta Admin, Kshetra Admin) picks freely from POST — their
      * own fixed context is the Prant tier, not Jila, so the cascading
      * Jila dropdown (scoped to whatever Prant was already resolved)
@@ -460,11 +520,54 @@ class UsersController extends BaseController
     {
         $posted = $this->request->getPost('jila_id') ? (int) $this->request->getPost('jila_id') : null;
 
-        if (in_array($actor->role, [User::ROLE_SUB_ADMIN, User::ROLE_PRAKHAND_ADMIN], true)) {
+        if ($actor->role === User::ROLE_PRAKHAND_ADMIN) {
             return $actor->jila_id;
         }
 
+        if ($actor->role === User::ROLE_SUB_ADMIN) {
+            $allowedIds = LocationScope::jilaIds($actor);
+            if ($allowedIds === null) {
+                return $posted; // scope_all — any Jila in their Prant is fair game
+            }
+            if (count($allowedIds) > 1) {
+                return ($posted !== null && in_array($posted, $allowedIds, true)) ? $posted : null;
+            }
+
+            return $actor->jila_id; // exactly one assigned Jila — the fixed value is enough
+        }
+
         return $posted;
+    }
+
+    /**
+     * The Prakhand a user being created/edited belongs to — mirrors
+     * resolveActorJilaId() one tier down. A Prakhand Admin actor assigned
+     * to more than one Prakhand (multi-select, or "All Prakhands" in
+     * their Jila) picks from a form field, with the same "the posted
+     * value must actually be one of their own" guard; one assigned to
+     * exactly one Prakhand stays fixed to it, same as before. Every
+     * other actor (global access, Pranta Admin, Jila Admin) picks freely
+     * from POST — their own fixed context is a tier above Prakhand, so
+     * the cascading Prakhand dropdown already constrains them in
+     * practice.
+     */
+    private function resolveActorPrakhandId(User $actor): ?int
+    {
+        $posted = $this->request->getPost('prakhand_id') ? (int) $this->request->getPost('prakhand_id') : null;
+
+        if ($actor->role !== User::ROLE_PRAKHAND_ADMIN) {
+            return $posted;
+        }
+
+        $allowedIds = LocationScope::prakhandIds($actor);
+        if ($allowedIds === null) {
+            return $posted; // scope_all — any Prakhand in their Jila is fair game
+        }
+        if (count($allowedIds) > 1) {
+            return ($posted !== null && in_array($posted, $allowedIds, true)) ? $posted : null;
+        }
+
+        return $actor->prakhand_id; // exactly one assigned Prakhand — the fixed value is enough
     }
 
 
@@ -498,9 +601,7 @@ class UsersController extends BaseController
         //     ? $actor->jila_id
         //     : ($this->request->getPost('jila_id') ? (int) $this->request->getPost('jila_id') : null);
 
-        $prakhandId = $actor->role === User::ROLE_PRAKHAND_ADMIN
-            ? $actor->prakhand_id
-            : ($this->request->getPost('prakhand_id') ? (int) $this->request->getPost('prakhand_id') : null);
+        $prakhandId = $this->resolveActorPrakhandId($actor);
 
         $scopeAll   = false;
         $prantIds   = [];
@@ -571,6 +672,15 @@ class UsersController extends BaseController
 
         if ($role === User::ROLE_PRAKHAND_ADMIN) {
             return ($scopeAll || $prakhandIds) ? null : 'Select at least one Prakhand, or choose All Prakhands.';
+        }
+
+        // Karyakarta — the only role left at this point. Every other
+        // actor already resolves a fixed/posted prakhand_id, but a
+        // multi-Prakhand Prakhand Admin who didn't pick one (or picked
+        // one outside their own assigned set) resolves to null here
+        // instead of silently creating a Karyakarta with no Prakhand.
+        if (! $prakhandId) {
+            return 'Select a Prakhand for this role.';
         }
 
         return null;
@@ -704,6 +814,8 @@ class UsersController extends BaseController
             'hasGlobalAccess' => $actor->hasGlobalAccess(),
             'prants'          => $prants,
             'actorPrants'     => $this->actorPrantOptions($actor, $prants),
+            'actorJilas'      => $this->actorJilaOptions($actor),
+            'actorPrakhands'  => $this->actorPrakhandOptions($actor),
             'jilas'           => $target->prant_id ? (new JilaModel())->forPrant($target->prant_id) : [],
             'prakhands'       => $target->jila_id ? (new PrakhandModel())->forJila($target->jila_id) : [],
             // Falls back to the target's legacy single prant_id/jila_id/

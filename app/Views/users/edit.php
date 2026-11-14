@@ -167,7 +167,16 @@
           </label>
         </div>
       <?php elseif ($actor->role === 'sub_admin'): ?>
-        <div class="field"><label class="f-label">Prant &amp; Jila</label><input class="f-input" value="Your Jila (assigned automatically)" disabled></div>
+        <?php if ($actorJilas !== null): ?>
+          <div class="field"><label class="f-label">Jila</label>
+            <select class="f-input" name="jila_id" data-jila-select>
+              <option value="">Select Jila…</option>
+              <?php foreach ($actorJilas as $j): ?><option value="<?= $j['id'] ?>" <?= (int) $target->jila_id === (int) $j['id'] ? 'selected' : '' ?>><?= esc($j['name']) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+        <?php else: ?>
+          <div class="field"><label class="f-label">Prant &amp; Jila</label><input class="f-input" value="Your Jila (assigned automatically)" disabled></div>
+        <?php endif; ?>
         <div class="field" data-loc-level="2" data-variant="single"><label class="f-label">Prakhand</label>
           <select class="f-input" name="prakhand_id" data-prakhand-select>
             <option value="">—</option>
@@ -188,6 +197,17 @@
             <input type="checkbox" name="prakhand_scope_all" value="1" style="width:auto" data-prakhand-all <?= $target->scope_all && $target->role === 'prakhand_admin' ? 'checked' : '' ?>> All Prakhands in your Jila
           </label>
         </div>
+      <?php elseif ($actor->role === 'prakhand_admin'): ?>
+        <?php if ($actorPrakhands !== null): ?>
+          <div class="field"><label class="f-label">Prakhand</label>
+            <select class="f-input" name="prakhand_id" data-prakhand-select>
+              <option value="">Select Prakhand…</option>
+              <?php foreach ($actorPrakhands as $p): ?><option value="<?= $p['id'] ?>" <?= (int) $target->prakhand_id === (int) $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+        <?php else: ?>
+          <div class="field"><label class="f-label">Location</label><input class="f-input" value="Your Prant, Jila &amp; Prakhand (assigned automatically)" disabled></div>
+        <?php endif; ?>
       <?php else: ?>
         <div class="field"><label class="f-label">Location</label><input class="f-input" value="Your Prant, Jila &amp; Prakhand (assigned automatically)" disabled></div>
       <?php endif; ?>
