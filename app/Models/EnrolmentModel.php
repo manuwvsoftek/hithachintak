@@ -122,6 +122,28 @@ class EnrolmentModel extends Model
     }
 
     /**
+     * The most recent receipted enrolment for a member phone — used by
+     * the public "Find My Receipt" phone lookup (PublicReceiptController::
+     * findByPhone()), for a visitor who has their mobile number but not
+     * the per-receipt token link. receipt_no IS NOT NULL is the same
+     * "a receipt actually exists" check hasCompletedHithachintak() uses,
+     * but not restricted to any one programme — this lookup serves every
+     * programme's receipts, not just Hithachintak's. enrolments.* is
+     * selected explicitly so the members join (needed only to match on
+     * phone) doesn't shadow any same-named enrolments column.
+     */
+    public function mostRecentReceiptedByPhone(string $phone): ?Enrolment
+    {
+        return $this->select('enrolments.*')
+            ->join('members', 'members.id = enrolments.member_id')
+            ->where('members.phone', $phone)
+            ->where('enrolments.receipt_no IS NOT NULL')
+            ->orderBy('enrolments.paid_at', 'DESC')
+            ->orderBy('enrolments.id', 'DESC')
+            ->first();
+    }
+
+    /**
      * Whether this phone number has a *receipted* Hithachintak enrolment —
      * used to gate every Admin/Karyakarta account into completing their
      * own Hithachintak self-enrolment before they can enrol anyone else.

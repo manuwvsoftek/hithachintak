@@ -56,7 +56,7 @@
     <tr><td class="label"><?= esc($t['programme']) ?></td><td class="value"><?= esc($programme['name']) ?></td></tr>
     <tr><td class="label"><?= esc($t['prant']) ?></td><td class="value"><?= esc($prant['name']) ?></td></tr>
     <tr><td class="label"><?= esc($t['trust']) ?></td><td class="value"><?= esc($trustName) ?></td></tr>
-    <tr><td class="label"><?= esc($t['pan']) ?></td><td class="value"><?= esc($trustPan) ?></td></tr>
+    <!-- <tr><td class="label"><?= esc($t['pan']) ?></td><td class="value"><?= esc($trustPan) ?></td></tr> -->
     <tr><td class="label"><?= esc($t['date']) ?></td><td class="value"><?= esc(date('d M Y', strtotime($enrolment->paid_at ?? $enrolment->created_at))) ?></td></tr>
     <tr><td class="label"><?= esc($t['mode']) ?></td><td class="value"><?= esc(ucfirst($enrolment->payment_mode ?? '—')) ?></td></tr>
     <tr><td class="label"><?= esc($t['collectedBy']) ?></td><td class="value"><?= esc($collectedBy) ?></td></tr>
