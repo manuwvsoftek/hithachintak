@@ -98,7 +98,6 @@
               <?php if ($canManage): ?>
               <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/edit') ?>">Edit</a>
               <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/password') ?>">Password</a>
-              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/activity') ?>">Activity</a>
               <form action="<?= site_url('admin/users/' . $u->id . '/block') ?>" method="post">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-sm <?= $u->status === 'blocked' ? 'btn-success' : 'btn-danger' ?>">
@@ -106,6 +105,7 @@
                 </button>
               </form>
               <?php endif; ?>
+              <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/users/' . $u->id . '/activity') ?>">Activity</a>
             </div>
             <?php endif; ?>
           </td>
