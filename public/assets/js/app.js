@@ -565,6 +565,17 @@
     }
   });
 
+  // A header checkbox that toggles every checkbox matching a selector
+  // (e.g. the Awaiting Payment tab's per-row "remove" checkboxes) — the
+  // selector itself lives in the attribute, so this works for any future
+  // bulk-select table without new JS.
+  document.querySelectorAll('[data-select-all]').forEach(function (master) {
+    var targets = document.querySelectorAll(master.dataset.selectAll);
+    master.addEventListener('change', function () {
+      targets.forEach(function (cb) { cb.checked = master.checked; });
+    });
+  });
+
   // "Copy" buttons next to a read-only field (e.g. the webhook URL).
   document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
     btn.addEventListener('click', function () {

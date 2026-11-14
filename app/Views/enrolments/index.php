@@ -30,12 +30,20 @@
       <div class="panel-note" style="margin-top:3px">Started but no payment confirmed yet — no receipt, and not counted in the register's totals until paid.</div>
     </div>
   </div>
+  <?php if ($canRemoveAwaiting): ?>
+  <form action="<?= site_url('admin/enrolments/awaiting/remove') ?>" method="post">
+    <?= csrf_field() ?>
+  <?php endif; ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Member</th><th>Programme</th><th>Karyakarta</th><th>Status</th><th>Started</th><th></th></tr></thead>
+      <thead><tr>
+        <?php if ($canRemoveAwaiting): ?><th style="width:28px"><input type="checkbox" data-select-all="[name='enrolment_ids[]']"></th><?php endif; ?>
+        <th>Member</th><th>Programme</th><th>Karyakarta</th><th>Status</th><th>Started</th><th></th>
+      </tr></thead>
       <tbody>
       <?php foreach ($awaiting as $e): ?>
         <tr>
+          <?php if ($canRemoveAwaiting): ?><td><input type="checkbox" name="enrolment_ids[]" value="<?= $e->id ?>"></td><?php endif; ?>
           <td style="font-weight:700"><?= esc($e->member_name) ?></td>
           <td><?= esc($e->programme_name) ?></td>
           <td><?= esc($e->karyakarta_name) ?></td>
@@ -45,11 +53,19 @@
         </tr>
       <?php endforeach; ?>
       <?php if (! $awaiting): ?>
-        <tr><td colspan="6" class="panel-note">Nothing awaiting payment.</td></tr>
+        <tr><td colspan="<?= $canRemoveAwaiting ? 7 : 6 ?>" class="panel-note">Nothing awaiting payment.</td></tr>
       <?php endif; ?>
       </tbody>
     </table>
   </div>
+  <?php if ($canRemoveAwaiting && $awaiting): ?>
+  <div style="margin-top:12px">
+    <button type="submit" class="btn btn-secondary btn-sm" data-confirm="Remove the selected awaiting-payment enrolments? This frees their phone numbers for a fresh attempt.">Remove selected</button>
+  </div>
+  <?php endif; ?>
+  <?php if ($canRemoveAwaiting): ?>
+  </form>
+  <?php endif; ?>
 </div>
 <?php elseif ($view === 'drafts'): ?>
 <div class="panel">

@@ -137,6 +137,11 @@ class EnrolmentController extends BaseController
                     ->orderBy('enrolments.created_at', 'DESC')->findAll(),
                 'draftCount'    => $draftCount,
                 'awaitingCount' => $awaitingCount,
+                // Bulk-removing stale awaiting-payment rows is a Jila
+                // Admin-and-up action — see removeAwaiting() — so the
+                // view only shows the select/remove controls at all when
+                // this is true.
+                'canRemoveAwaiting' => User::rank($actor->role) >= User::rank(User::ROLE_SUB_ADMIN),
             ]);
         }
 
@@ -244,6 +249,58 @@ class EnrolmentController extends BaseController
         (new AuditLogModel())->record($this->currentUser()->id, 'cash_remitted', 'cash_remittance', $id, ['amount' => $row['amount']]);
 
         return redirect()->to('/admin/enrolments')->with('success', 'Marked as remitted.');
+    }
+
+    /**
+     * Bulk-clears stale "Awaiting Payment" rows (otp_pending/
+     * awaiting_payment) selected from that tab — started but abandoned,
+     * never actually paid for. Marked cancelled rather than deleted, so
+     * the row's history stays put but the member's phone number is freed
+     * for a fresh attempt, exactly like any other cancelled/failed
+     * enrolment already is (see EnrolmentModel::hasActiveHithachintak()).
+     * Jila Admin and above only — a Prakhand Admin or Karyakarta can't
+     * bulk-clear these, including their own.
+     */
+    public function removeAwaiting()
+    {
+        $actor = $this->currentUser();
+
+        if (User::rank($actor->role) < User::rank(User::ROLE_SUB_ADMIN)) {
+            return redirect()->to('/admin/enrolments?view=awaiting')
+                ->with('error', "You don't have permission to remove awaiting-payment enrolments.");
+        }
+
+        $ids = array_values(array_unique(array_map('intval', (array) $this->request->getPost('enrolment_ids'))));
+        if (! $ids) {
+            return redirect()->to('/admin/enrolments?view=awaiting')
+                ->with('error', 'Select at least one enrolment to remove.');
+        }
+
+        // scopedTo() keeps this to whatever the actor can already see —
+        // posting an id outside their own hierarchy can't remove it — and
+        // the status filter keeps it from touching a row that isn't
+        // actually awaiting payment any more (e.g. paid in another tab
+        // just now).
+        $matched = (new EnrolmentModel())->scopedTo($actor)
+            ->whereIn('id', $ids)
+            ->whereIn('status', Enrolment::AWAITING_STATUSES)
+            ->findAll();
+
+        if (! $matched) {
+            return redirect()->to('/admin/enrolments?view=awaiting')
+                ->with('error', 'Nothing to remove — those rows are no longer awaiting payment.');
+        }
+
+        $model = new EnrolmentModel();
+        foreach ($matched as $enrolment) {
+            $model->update($enrolment->id, ['status' => Enrolment::STATUS_CANCELLED]);
+            (new AuditLogModel())->record($actor->id, 'awaiting_removed', 'enrolment', $enrolment->id, []);
+        }
+
+        $count = count($matched);
+
+        return redirect()->to('/admin/enrolments?view=awaiting')
+            ->with('success', $count . ' awaiting-payment enrolment' . ($count === 1 ? '' : 's') . ' removed.');
     }
 
     public function newForm()

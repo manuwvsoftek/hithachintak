@@ -129,6 +129,7 @@ $routes->group('admin', ['filter' => 'authGuard'], static function ($routes) {
         $routes->post('(:num)/receipt/send/(:alpha)', 'EnrolmentController::sendReceipt/$1/$2');
         $routes->get('export.csv', 'EnrolmentController::exportCsv');
         $routes->post('remit-cash', 'EnrolmentController::remitCash');
+        $routes->post('awaiting/remove', 'EnrolmentController::removeAwaiting');
     });
 
     $routes->group('reports', ['filter' => 'permission:Reports,View'], static function ($routes) {
