@@ -589,3 +589,173 @@
     });
   });
 })();
+
+/**
+ * First-time guide / replayable tour of the admin nav. Steps are keyed to
+ * the same [data-tour="<key>"] attributes the layout already puts on each
+ * sidebar link — a role whose permissions hide a given link (admin.php's
+ * $navLink() already returns '' for it) simply has no matching element on
+ * the page, so this filters itself down to exactly what that role can see,
+ * with no separate role-to-steps table to keep in sync.
+ *
+ * Framing technique: four "dim" panels positioned around the highlighted
+ * element, rather than one full-page overlay with a cutout — the real
+ * element then sits on top and stays clickable with no z-index/stacking-
+ * context fight against the sticky topbar/sidebar.
+ */
+(function () {
+  var STEPS = [
+    { key: 'dashboard', title: 'Dashboard', body: 'A quick snapshot of enrolments, collections and activity across everything you have access to.' },
+    { key: 'masters', title: 'Masters', body: 'Manage Programmes and the Prant → Jila → Prakhand location hierarchy here.' },
+    { key: 'users', title: 'Users & Hierarchy', body: 'Create and manage accounts here, and see headcounts across every role below you.' },
+    { key: 'enrolments', title: 'Enrolments', body: 'Your full register — new enrolments, payments still awaiting completion, and pending drafts all live here.' },
+    { key: 'reports', title: 'Reports', body: 'Build and export custom data views — CSV, Excel or PDF — filtered however you need.' },
+    { key: 'settings', title: 'Settings & Integrations', body: 'Configure trust details, payment gateways, SMS/WhatsApp/Email and role permissions here.' },
+    { key: 'account', title: 'Your account', body: 'Your name and role are shown here — click it any time to view your profile or change your password.' },
+    { key: 'replay', title: 'That’s the tour!', body: 'Come back to this Guide button any time to see it again.' },
+  ];
+  var SEEN_KEY = 'vhp_tour_seen';
+
+  var dimEls = [];
+  var ring = null;
+  var card = null;
+  var activeSteps = [];
+  var stepIndex = 0;
+
+  function hasSeen() {
+    try { return localStorage.getItem(SEEN_KEY) === '1'; } catch (err) { return true; }
+  }
+  function markSeen() {
+    try { localStorage.setItem(SEEN_KEY, '1'); } catch (err) { /* private browsing / storage unavailable — not fatal */ }
+  }
+
+  function setRect(el, left, top, width, height) {
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    el.style.width = Math.max(0, width) + 'px';
+    el.style.height = Math.max(0, height) + 'px';
+  }
+
+  function buildChrome() {
+    ['top', 'bottom', 'left', 'right'].forEach(function () {
+      var d = document.createElement('div');
+      d.className = 'tour-dim';
+      document.body.appendChild(d);
+      dimEls.push(d);
+    });
+    ring = document.createElement('div');
+    ring.className = 'tour-ring';
+    document.body.appendChild(ring);
+    card = document.createElement('div');
+    card.className = 'tour-card';
+    document.body.appendChild(card);
+  }
+
+  function teardown() {
+    dimEls.forEach(function (d) { d.remove(); });
+    dimEls = [];
+    if (ring) { ring.remove(); ring = null; }
+    if (card) { card.remove(); card = null; }
+    document.removeEventListener('keydown', onKeydown);
+    window.removeEventListener('resize', renderCurrent);
+  }
+
+  function onKeydown(e) {
+    if (e.key === 'Escape') { endTour(); }
+  }
+
+  function endTour() {
+    markSeen();
+    teardown();
+  }
+
+  function positionFrame(rect) {
+    var pad = 6;
+    setRect(dimEls[0], 0, 0, window.innerWidth, rect.top - pad);
+    setRect(dimEls[1], 0, rect.bottom + pad, window.innerWidth, window.innerHeight - rect.bottom - pad);
+    setRect(dimEls[2], 0, rect.top - pad, rect.left - pad, rect.height + pad * 2);
+    setRect(dimEls[3], rect.right + pad, rect.top - pad, window.innerWidth - rect.right - pad, rect.height + pad * 2);
+    setRect(ring, rect.left - pad, rect.top - pad, rect.width + pad * 2, rect.height + pad * 2);
+  }
+
+  function positionCard(rect) {
+    card.style.left = '12px';
+    card.style.top = '12px';
+    var cardRect = card.getBoundingClientRect();
+
+    var top = rect.bottom + 16;
+    if (top + cardRect.height > window.innerHeight - 12) {
+      top = rect.top - cardRect.height - 16;
+    }
+    if (top < 12) { top = 12; }
+
+    var left = rect.left;
+    if (left + cardRect.width > window.innerWidth - 12) {
+      left = window.innerWidth - cardRect.width - 12;
+    }
+    if (left < 12) { left = 12; }
+
+    card.style.top = top + 'px';
+    card.style.left = left + 'px';
+  }
+
+  function renderCurrent() {
+    var step = activeSteps[stepIndex];
+    if (!step) { endTour(); return; }
+
+    var target = document.querySelector('[data-tour="' + step.key + '"]');
+    if (!target) { stepIndex++; renderCurrent(); return; }
+
+    target.scrollIntoView({ block: 'center', inline: 'center' });
+    var rect = target.getBoundingClientRect();
+    positionFrame(rect);
+
+    var isLast = stepIndex === activeSteps.length - 1;
+    card.innerHTML =
+      '<div class="tour-card-step">Step ' + (stepIndex + 1) + ' of ' + activeSteps.length + '</div>' +
+      '<div class="tour-card-title"></div>' +
+      '<div class="tour-card-body"></div>' +
+      '<div class="tour-card-actions">' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-tour-skip>Skip</button>' +
+        '<div class="tour-card-nav">' +
+          (stepIndex > 0 ? '<button type="button" class="btn btn-secondary btn-sm" data-tour-back>Back</button>' : '') +
+          '<button type="button" class="btn btn-primary btn-sm" data-tour-next>' + (isLast ? 'Finish' : 'Next') + '</button>' +
+        '</div>' +
+      '</div>';
+    card.querySelector('.tour-card-title').textContent = step.title;
+    card.querySelector('.tour-card-body').textContent = step.body;
+    card.querySelector('[data-tour-skip]').addEventListener('click', endTour);
+    var backBtn = card.querySelector('[data-tour-back]');
+    if (backBtn) { backBtn.addEventListener('click', function () { stepIndex--; renderCurrent(); }); }
+    card.querySelector('[data-tour-next]').addEventListener('click', function () {
+      if (isLast) { endTour(); } else { stepIndex++; renderCurrent(); }
+    });
+
+    positionCard(rect);
+  }
+
+  function startTour() {
+    activeSteps = STEPS.filter(function (step) { return !!document.querySelector('[data-tour="' + step.key + '"]'); });
+    if (!activeSteps.length) return;
+
+    stepIndex = 0;
+    buildChrome();
+    document.addEventListener('keydown', onKeydown);
+    window.addEventListener('resize', renderCurrent);
+    renderCurrent();
+  }
+
+  document.querySelectorAll('[data-tour-replay]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      startTour();
+    });
+  });
+
+  // A short delay lets the sticky sidebar/fonts settle before the first
+  // element position is measured, so the highlight doesn't jump right
+  // after it appears.
+  if (document.body.hasAttribute('data-tour-auto') && !hasSeen()) {
+    setTimeout(startTour, 300);
+  }
+})();

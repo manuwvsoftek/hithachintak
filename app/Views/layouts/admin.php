@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>?v=<?= filemtime(FCPATH . 'assets/css/app.css') ?>">
   <?= $this->include('partials/pwa_head') ?>
 </head>
-<body>
 <?php
   $segment = trim(uri_string(), '/');
   $parts   = explode('/', $segment);
@@ -21,10 +20,16 @@
       $key = $path === '' ? 'dashboard' : explode('/', $path)[0];
       $cls = $key === (($GLOBALS['__vhp_active'] ?? '')) ? 'side-link active' : 'side-link';
 
-      return '<a class="' . $cls . '" href="' . site_url('admin/' . $path) . '">' . esc($label) . '</a>';
+      // data-tour="<key>" lets the first-time guide (app.js) target this
+      // same link — a role that can't see it (this whole function already
+      // returned '' above) simply has no such element on the page, so the
+      // guide's steps are automatically limited to what this role can
+      // actually access, with no separate role list to keep in sync.
+      return '<a class="' . $cls . '" href="' . site_url('admin/' . $path) . '" data-tour="' . $key . '">' . esc($label) . '</a>';
   };
   $GLOBALS['__vhp_active'] = $active === '' ? 'dashboard' : $active;
 ?>
+<body<?= $active === '' || $active === 'dashboard' ? ' data-tour-auto' : '' ?>>
   <header class="topbar">
     <a class="brand" href="<?= site_url('admin') ?>">
       <span class="brand-mark"><img src="<?= base_url('assets/images/logo-placeholder.jpeg') ?>" alt=""></span>
@@ -34,10 +39,13 @@
       </span>
     </a>
     <div class="topbar-right">
-       <a class="topbar-user" href="<?= site_url('account/profile') ?>" style="text-decoration:none;color:inherit" title="My Account">
+       <a class="topbar-user" href="<?= site_url('account/profile') ?>" style="text-decoration:none;color:inherit" title="My Account" data-tour="account">
         <b><?= esc(session('user_name')) ?></b>
         <?= esc(\App\Entities\User::ROLE_LABELS[session('user_role')] ?? '') ?>
       </a>
+      <button type="button" class="topbar-help" data-tour-replay title="Show the quick guide again">
+        <span aria-hidden="true">?</span> Guide
+      </button>
       <form action="<?= site_url('account/set-language') ?>" method="post" class="topbar-lang" style="margin:0" title="Language shown on the enrolment form and the member's receipt">
         <?= csrf_field() ?>
         <select name="lang" class="js-auto-submit">

@@ -74,6 +74,9 @@ button{font-family:inherit}
 .topbar-user:hover b{text-decoration:underline}
 .logout-link{display:inline-flex;align-items:center;gap:6px;color:#C7D4E8;font-size:12px;font-weight:600;text-decoration:none;background:none;border:none;cursor:pointer;font-family:inherit}
 .logout-link:hover{color:#fff}
+.topbar-help{display:inline-flex;align-items:center;gap:5px;color:#C7D4E8;font-size:12px;font-weight:600;background:none;border:none;cursor:pointer;font-family:inherit}
+.topbar-help:hover{color:#fff}
+.topbar-help span{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:10.5px;line-height:1}
 .topbar-lang select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#F3F6FC;font-size:12px;font-weight:500;padding:6px 8px;border-radius:6px;font-family:inherit;cursor:pointer}
 .topbar-lang select:focus{outline:2px solid #fff;outline-offset:1px}
 .topbar-lang option{color:var(--ink)}
@@ -391,3 +394,17 @@ body:has(.landing-nav){background:var(--bg)}
 .landing-footer-links a:hover{color:#fff}
 .landing-footer-copy{color:#8CA2C4;font-size:12px;width:100%;text-align:center;order:3}
 @media (min-width:760px){.landing-footer-copy{width:auto;text-align:right;order:0}}
+
+/* ---- first-time guide / replayable tour ----
+   Four "dim" panels framing the highlighted element (rather than one
+   full-page overlay with a cutout) so the real element stays on top and
+   clickable with no z-index/stacking-context juggling against the sticky
+   topbar/sidebar. app.js positions each one per step. */
+.tour-dim{position:fixed;background:rgba(15,42,77,.55);z-index:300}
+.tour-ring{position:fixed;z-index:301;border:2px solid var(--orange-500);border-radius:8px;box-shadow:0 0 0 4px rgba(230,126,31,.22);pointer-events:none}
+.tour-card{position:fixed;z-index:302;width:300px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:16px}
+.tour-card-step{font-size:10.5px;font-weight:700;color:var(--orange-600);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.tour-card-title{font-size:14.5px;font-family:Montserrat,sans-serif;color:var(--blue-900);margin-bottom:6px}
+.tour-card-body{font-size:12.8px;color:var(--ink-soft);line-height:1.55;margin-bottom:14px}
+.tour-card-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tour-card-nav{display:flex;gap:8px;margin-left:auto}
