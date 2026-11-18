@@ -62,6 +62,7 @@
   </header>
 
   <div class="stage">
+    <?= $this->include('partials/pwa_install_banner') ?>
     <div class="admin-shell">
       <nav class="admin-sidebar">
         <?= $navLink('', 'Dashboard', 'Dashboard', 'Own') ?>

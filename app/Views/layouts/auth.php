@@ -26,6 +26,7 @@
       </div>
       <div class="auth-form-wrap">
         <div class="auth-card">
+          <?= $this->include('partials/pwa_install_banner') ?>
           <?= $this->include('partials/flash') ?>
           <?= $this->renderSection('content') ?>
         </div>
