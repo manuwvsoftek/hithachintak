@@ -33,12 +33,27 @@ class EnrolmentController extends BaseController
     //     'Retired', 'Sangh Parivar', 'Social Service/NGO', 'Self Employed', 'Student', 'Others',
     // ];
 
-    public const PROFESSIONS = [
-        'Agriculture/किसान', 'Business/व्यापार', 'CA/CS', 'Advocate/अधिवक्ता', 'Teacher/अध्यापक', 
-        'Professor/प्राध्यापक', 'Educator/शिक्षा संस्थान', 'Entrepreneur, Industry/उद्योजक', 
-        'Private service/निजी सर्विस', 'Govt services/सरकारी सर्विस', 'Home Maker/गृहिणी', 
-        'Retired/सेवानिवृत्त', 'Full timer,Pracharak/पूर्णकालिक, वानप्रस्थी, प्रचारक', 
-        'Student/विद्यार्थी', 'Engineer/इंजिनियर', 'Property Dealer/प्रॉपर्टी डीलर', 'Social service/समाजिक कार्य', 'Others/अन्य'];
+   public const PROFESSIONS = [
+    'Advocate/अधिवक्ता',
+    'Agriculture/किसान',
+    'Business/व्यापार',
+    'CA/CS',
+    'Educator/शिक्षा संस्थान',
+    'Engineer/इंजिनियर',
+    'Entrepreneur, Industry/उद्योजक',
+    'Full timer,Pracharak/पूर्णकालिक, वानप्रस्थी, प्रचारक',
+    'Govt services/सरकारी सर्विस',
+    'Home Maker/गृहिणी',
+    'Medical/वैद्यकीय',
+    'Private service/निजी सर्विस',
+    'Professor/प्राध्यापक',
+    'Property Dealer/प्रॉपर्टी डीलर',
+    'Retired/सेवानिवृत्त',
+    'Social service/समाजिक कार्य',
+    'Student/विद्यार्थी',
+    'Teacher/अध्यापक',
+    'Others/अन्य'
+];
 
     
     private function service(): EnrolmentService

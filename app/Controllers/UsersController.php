@@ -24,7 +24,7 @@ use CodeIgniter\Exceptions\PageNotFoundException;
 class UsersController extends BaseController
 {
     public const AYAMS = [
-        'Bajrang Dal', 'Dharma Prasar', 'Dharma Yatra', 'Dharmacharya Sampark', 'Durgavahini', 'Goraksha', 'Mandir & Archak Purohit', 'Matrushakti', 'Naitik Shiksha', 'Prachar Prasar', 'Samajik Samarasata', 'Sangathan', 'Sanskrit & Ved Vidyalay', 'Satsang', 'Seva', 'Vidhi Prakostha', 'Vishesh Sampark'
+        'Bajrang Dal', 'Dharma Prasar', 'Dharma Yatra', 'Dharmacharya Sampark', 'Durgavahini', 'Goraksha', 'Mandir & Archak Purohit', 'Matrushakti', 'Naitik Shiksha', 'Prachar Prasar', 'Samajik Samarasata', 'Sangathan', 'Sanskrit & Ved Vidyalay', 'Satsang', 'Seva', 'Vidhi Prakostha', 'Vishesh Sampark', 'Others'
     ];
 
     public function index()
