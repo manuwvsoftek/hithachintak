@@ -19,7 +19,7 @@ class EnrolmentFamilyMemberModel extends Model
         'first_name'   => 'required|max_length[100]',
         'age_or_dob'   => 'required|max_length[30]',
         'gender'       => 'required|in_list[Male,Female,Other]',
-        'contact_number' =>  'required|max_length[100]',
+        'contact_number' =>  'permit_empty|max_length[100]',
     ];
 
     public function forEnrolment(int $enrolmentId): array

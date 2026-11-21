@@ -463,8 +463,8 @@
         '<select class="f-input family-profession-select"><option value="">—</option>' + professionOptions + '</select>' +
         '<input class="f-input family-profession-other" style="display:none;margin-top:6px" placeholder="Please specify">' +
         '<input type="hidden" name="family_profession[]" class="family-profession-value"></div>' +
-      '<div><label class="f-label-sm">' + T_CONTACT_NUMBER + ' <span class="required-mark">*</span></label>' +
-        '<input class="f-input family-contact" name="family_contact[]" inputmode="tel" required></div>' +
+      '<div><label class="f-label-sm">' + T_CONTACT_NUMBER + '</label>' +
+        '<input class="f-input family-contact" name="family_contact[]" inputmode="tel"></div>' +
       '</div>' +
       '<button type="button" class="btn btn-ghost btn-sm remove-family" style="position:absolute;top:6px;right:6px;color:var(--red-600)">✕</button>';
 
@@ -632,10 +632,8 @@
     document.querySelectorAll('.family-row').forEach(function(row, idx){
       var fn = row.querySelector('.family-first-name');
       var age = row.querySelector('.family-age');
-      var contact = row.querySelector('.family-contact');
       fn.classList.remove('field-invalid');
       age.classList.remove('field-invalid');
-      contact.classList.remove('field-invalid');
       if (!fn.value.trim()) {
         errors.push('Family member ' + (idx + 1) + ': ' + T_FIRST_NAME + ' is required.');
         fn.classList.add('field-invalid');
@@ -649,11 +647,6 @@
         errors.push('Family member ' + (idx + 1) + ': must be at least ' + MIN_AGE + ' years old — enter a valid age or date of birth.');
         age.classList.add('field-invalid');
         if (!firstBad) { firstBad = age; }
-      }
-      if (!contact.value.trim()) {
-        errors.push('Family member ' + (idx + 1) + ': ' + T_CONTACT_NUMBER + ' is required.');
-        contact.classList.add('field-invalid');
-        if (!firstBad) { firstBad = contact; }
       }
     });
 

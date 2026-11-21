@@ -11,11 +11,11 @@
  * prompt everywhere on this device, rather than nagging again per page.
  */
 ?>
-<div id="pwaInstallBanner" class="install-banner" hidden>
-  <span>Install this app on your phone or computer for quick access — works offline and loads faster.</span>
+<!-- <div id="pwaInstallBanner" class="install-banner" hidden>
+  <span>Install this app on your phone or computer for quick access</span>
   <button type="button" class="btn btn-primary btn-sm" id="pwaInstallBtn">Install</button>
   <button type="button" class="btn btn-ghost btn-sm" id="pwaInstallDismiss">Not now</button>
-</div>
+</div> -->
 <script <?= csp_script_nonce() ?>>
 (function(){
   var banner     = document.getElementById('pwaInstallBanner');

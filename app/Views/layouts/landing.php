@@ -21,7 +21,7 @@
       <a href="<?= site_url('contact-us') ?>">Contact Us</a>
     </nav>
     <div class="landing-nav-actions">
-      <a class="btn btn-secondary btn-sm" href="<?= site_url('login') ?>">Donate</a>
+      <a class="btn btn-secondary btn-sm" href="<?= site_url('login') ?>">Enroll</a>
       <a class="btn btn-primary btn-sm" href="<?= site_url('login') ?>">Login</a>
     </div>
   </header>

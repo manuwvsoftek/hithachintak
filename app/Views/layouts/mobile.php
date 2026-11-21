@@ -8,8 +8,8 @@
   <title><?= esc($title ?? 'Hithachintak Abhiyan') ?></title>
 
   <link rel="manifest" href="<?= base_url('manifest.webmanifest') ?>">
-  <link rel="icon" href="<?= base_url('assets/icons/icon-192.png') ?>">
-  <link rel="apple-touch-icon" href="<?= base_url('assets/icons/apple-touch-icon.png') ?>">
+  <link rel="icon" href="<?= base_url('assets/images/logo-placeholder.jpeg') ?>">
+  <link rel="apple-touch-icon" href="<?= base_url('assets/images/logo-placeholder.jpeg') ?>">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
