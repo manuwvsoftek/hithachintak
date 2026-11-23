@@ -10,6 +10,8 @@
   </div>
 </div>
 
+<?php if ($showCounts): ?>
+
 <div class="kpi-grid">
   <div class="kpi-card">
     <div class="kpi-label">Total Hithachintaks</div>
@@ -97,5 +99,14 @@
     </table>
   </div>
 </div>
+
+<?php else: ?>
+
+<div class="panel" style="text-align:center;padding:32px">
+  <p class="panel-note" style="margin-bottom:12px">Counts and recent activity are hidden by default to keep the Dashboard fast during the campaign.</p>
+  <a class="btn btn-secondary btn-sm" href="<?= esc(site_url('admin') . '?' . http_build_query(array_merge($_GET, ['showcounts' => 1]))) ?>">Show counts</a>
+</div>
+
+<?php endif; ?>
 
 <?= $this->endSection() ?>

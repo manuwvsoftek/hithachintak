@@ -95,30 +95,38 @@ class UsersController extends BaseController
                 ARRAY_FILTER_USE_BOTH
             );
 
-        // Same location/search scope as the directory table below, so the
-        // two always agree — the role filter is deliberately left out
-        // here, since this panel's whole point is the breakdown ACROSS
-        // roles; applying it would zero out every row but the one
-        // already selected in the table above.
-        $hierarchy = [];
-        foreach ($hierarchyRoleLabels as $roleKey => $label) {
-            $countQuery = (new UserModel())->visibleTo($actor)->where('role', $roleKey)->where('status', 'active');
-            if ($filterPrantId) {
-                $countQuery->where('prant_id', $filterPrantId);
+        // CAMPAIGN LITE MODE — one countAllResults() query per visible
+        // role tier below adds up fast on a page every admin opens
+        // constantly. Gated behind an explicit "Show counts" click
+        // (?showcounts=1) instead of running on every load — the
+        // directory table and its own filters above are unaffected.
+        $showCounts = (bool) $this->request->getGet('showcounts');
+        $hierarchy  = [];
+        if ($showCounts) {
+            // Same location/search scope as the directory table above, so
+            // the two always agree — the role filter is deliberately left
+            // out here, since this panel's whole point is the breakdown
+            // ACROSS roles; applying it would zero out every row but the
+            // one already selected in the table above.
+            foreach ($hierarchyRoleLabels as $roleKey => $label) {
+                $countQuery = (new UserModel())->visibleTo($actor)->where('role', $roleKey)->where('status', 'active');
+                if ($filterPrantId) {
+                    $countQuery->where('prant_id', $filterPrantId);
+                }
+                if ($filterJilaId) {
+                    $countQuery->where('jila_id', $filterJilaId);
+                }
+                if ($filterPrakhandId) {
+                    $countQuery->where('prakhand_id', $filterPrakhandId);
+                }
+                if ($search) {
+                    $countQuery->groupStart()->like('name', $search)->orLike('phone', $search)->groupEnd();
+                }
+                $hierarchy[] = [
+                    'role'  => $label,
+                    'count' => $countQuery->countAllResults(),
+                ];
             }
-            if ($filterJilaId) {
-                $countQuery->where('jila_id', $filterJilaId);
-            }
-            if ($filterPrakhandId) {
-                $countQuery->where('prakhand_id', $filterPrakhandId);
-            }
-            if ($search) {
-                $countQuery->groupStart()->like('name', $search)->orLike('phone', $search)->groupEnd();
-            }
-            $hierarchy[] = [
-                'role'  => $label,
-                'count' => $countQuery->countAllResults(),
-            ];
         }
 
         // Same resume pattern as the New Enrolment form: an explicit
@@ -146,6 +154,7 @@ class UsersController extends BaseController
             'locationLabels' => $locationLabels,
             'canManageMap' => $canManageMap,
             'hierarchy'  => $hierarchy,
+            'showCounts' => $showCounts,
             'prants'     => $prants,
             'jilas'      => $filterPrantId ? (new JilaModel())->forPrant($filterPrantId) : [],
             'prakhands'  => $filterJilaId ? (new PrakhandModel())->forJila($filterJilaId) : [],
@@ -163,19 +172,6 @@ class UsersController extends BaseController
             'resumeDraft'    => $resumeDraft,
             'ayams'       => self::AYAMS,
         ]);
-        //  return view('users/index', [
-        //     'title'      => 'Users & Hierarchy',
-        //     'activeTab'  => 'directory',
-        //     'draftCount' => $this->draftCount($actor),
-        //     'users'      => $users,
-        //     'pager'      => $userModel->pager,
-        //     'locationLabels' => $locationLabels,
-        //     'hierarchy'  => $hierarchy,
-        //     'roleLabels' => $visibleRoleLabels,
-        //     'hasGlobalAccess' => $actor->hasGlobalAccess(),
-        //     'currentUserId' => $actor->id,
-        //     'actor' => $actor,
-        // ]);
     }
 
      /** The New User form — its own page now (see index()'s comment). */
@@ -851,7 +847,7 @@ class UsersController extends BaseController
         $id = (int) $id;
 
         $actor  = $this->currentUser();
-    
+
         $target = $this->manageableTarget($actor, $id);
         if (! $target || ! $this->isOwnCreation($actor, $target)) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -859,7 +855,7 @@ class UsersController extends BaseController
 
         $manageableRoles = $this->manageableRoles($actor);
        // $role = $actor->role;
-       $role = (string) $this->request->getPost('role'); 
+       $role = (string) $this->request->getPost('role');
        $rules = [
             'name'  => 'required|min_length[2]|max_length[150]',
             'phone' => "required|regex_match[/^[6-9][0-9]{9}\$/]|is_unique[users.phone,id,{$id}]",

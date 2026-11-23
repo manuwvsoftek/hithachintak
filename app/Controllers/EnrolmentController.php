@@ -55,7 +55,7 @@ class EnrolmentController extends BaseController
     'Others/अन्य'
 ];
 
-    
+
     private function service(): EnrolmentService
     {
         return new EnrolmentService();
@@ -119,15 +119,19 @@ class EnrolmentController extends BaseController
     public function index()
     {
         $actor = $this->currentUser();
-        (new EnrolmentDraftModel())->pruneExpired();
 
-        $draftCount = (new EnrolmentDraftModel())->scopedTo($actor)->countAllResults();
-        // Started but not yet paid — otp_pending/awaiting_payment never
-        // appear in the main register below (applyFilters() restricts it
-        // to receipted statuses), so they get their own tab instead of
-        // just disappearing from view. Computed up front since the tabs
-        // bar (shown on every view) always needs this count.
-        $awaitingCount = (new EnrolmentModel())->scopedTo($actor)->whereIn('status', Enrolment::AWAITING_STATUSES)->countAllResults();
+        // CAMPAIGN LITE MODE — temporarily disabled for the high-traffic
+        // enrolment window: every extra COUNT/SUM/JOIN query below ran on
+        // every single load of this page purely for tab badges and KPI
+        // cards, competing with the New Enrolment form (the one thing that
+        // must stay fast) for DB capacity. None of this touches the actual
+        // submit path (store()/prepareEnrolmentData()/EnrolmentService::
+        // start()) — this only removes read-side stats from this list
+        // page. Restore pruneExpired() + the two real counts below once
+        // the campaign's traffic has eased.
+        // (new EnrolmentDraftModel())->pruneExpired();
+        $draftCount    = 0;
+        $awaitingCount = 0;
 
         if ($this->request->getGet('view') === 'drafts') {
             return view('enrolments/index', [
@@ -163,44 +167,42 @@ class EnrolmentController extends BaseController
         $model = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails());
         $enrolments = $model->orderBy('enrolments.created_at', 'DESC')->paginate(25);
 
-        // Quick stats mirror the active filters — the pager's own count is
-        // reused for "Total" rather than a second COUNT query, but the sum
-        // totals need their own query since paginate() has already
-        // executed the builder above.
-        $sums = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
-            ->select('
-                SUM(enrolments.amount) AS total_amount,
-                SUM(CASE WHEN enrolments.payment_mode IN ("upi","qr","autopay") THEN enrolments.amount ELSE 0 END) AS upi_amount,
-                SUM(CASE WHEN enrolments.payment_mode = "cash" THEN enrolments.amount ELSE 0 END) AS cash_amount
-            ', false)
-            ->first();
+        // CAMPAIGN LITE MODE — the three blocks below (amount-totals KPIs,
+        // the person headcount, and the cash-remittance-due table) are
+        // each an extra query on top of the one the page actually needs
+        // (the paginated list above). Gated behind an explicit "Show
+        // counts" click (?showcounts=1) during the high-traffic enrolment
+        // window instead of running on every page load — nothing auto-
+        // runs these, only an explicit click.
+        $totalPersons = $model->pager->getTotal();
+        $sums       = null;
+        $dueRows    = [];
+        $showCounts = (bool) $this->request->getGet('showcounts');
 
-        // "Number of Hithachintaks" for the KPI card — every receipted
-        // enrolment counts as one person, plus every family member added
-        // under it, so this headcount is what Total Amount should tally
-        // against (not just the count of enrolment rows, which undercounts
-        // every enrolment with a family attached). A plain aggregate
-        // (no GROUP BY) always collapses to exactly one row, so this is
-        // safe regardless of how large the filtered set is.
-        $headcount = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
-            ->join('enrolment_family_members efm', 'efm.enrolment_id = enrolments.id', 'left')
-            ->select('COUNT(DISTINCT enrolments.id) AS enrolment_count, COUNT(efm.id) AS family_count', false)
-            ->first();
-        $totalPersons = (int) ($headcount->enrolment_count ?? 0) + (int) ($headcount->family_count ?? 0);
+        if ($showCounts) {
+            $sums = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
+                ->select('
+                    SUM(enrolments.amount) AS total_amount,
+                    SUM(CASE WHEN enrolments.payment_mode IN ("upi","qr","autopay") THEN enrolments.amount ELSE 0 END) AS upi_amount,
+                    SUM(CASE WHEN enrolments.payment_mode = "cash" THEN enrolments.amount ELSE 0 END) AS cash_amount
+                ', false)
+                ->first();
 
-        // Cash still awaiting remittance to VHP's account — Hithachintak
-        // no longer has this state at all (its cash is remitted instantly
-        // via the gateway to complete the enrolment), so what's left here
-        // is only ever other programmes' cash, tracked the same way it
-        // always was.
-        $visibleUserIds = array_column((new UserModel())->visibleTo($actor)->select('id')->findAll(), 'id');
-        $dueRows = $visibleUserIds === [] ? [] : db_connect()->table('cash_remittances cr')
-            ->select('cr.*, u.name AS user_name')
-            ->join('users u', 'u.id = cr.user_id')
-            ->whereIn('cr.user_id', $visibleUserIds)
-            ->where('cr.status', 'due')
-            ->orderBy('cr.created_at', 'ASC')
-            ->get()->getResultArray();
+            $headcount = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
+                ->join('enrolment_family_members efm', 'efm.enrolment_id = enrolments.id', 'left')
+                ->select('COUNT(DISTINCT enrolments.id) AS enrolment_count, COUNT(efm.id) AS family_count', false)
+                ->first();
+            $totalPersons = (int) ($headcount->enrolment_count ?? 0) + (int) ($headcount->family_count ?? 0);
+
+            $visibleUserIds = array_column((new UserModel())->visibleTo($actor)->select('id')->findAll(), 'id');
+            $dueRows = $visibleUserIds === [] ? [] : db_connect()->table('cash_remittances cr')
+                ->select('cr.*, u.name AS user_name')
+                ->join('users u', 'u.id = cr.user_id')
+                ->whereIn('cr.user_id', $visibleUserIds)
+                ->where('cr.status', 'due')
+                ->orderBy('cr.created_at', 'ASC')
+                ->get()->getResultArray();
+        }
 
         // One grouped query for every row on this page, rather than one
         // query per row — the family list is shown nested under each
@@ -219,6 +221,7 @@ class EnrolmentController extends BaseController
             'programmes'        => (new ProgrammeModel())->active(),
             'totalCount'        => $model->pager->getTotal(),
             'totalPersons'      => $totalPersons,
+            'showCounts'        => $showCounts,
             'totalAmount'       => (float) ($sums?->total_amount ?? 0),
             'upiAmount'         => (float) ($sums?->upi_amount ?? 0),
             'cashAmount'        => (float) ($sums?->cash_amount ?? 0),
@@ -638,7 +641,7 @@ class EnrolmentController extends BaseController
            return [null, ['fields' => null, 'message' => 'This mobile number is already registered for Hithachintak.']];
         }
 
-       
+
         $familyFirstNames  = $post['family_first_name'] ?? [];
         $familyLastNames   = $post['family_last_name'] ?? [];
         $familyAges        = $post['family_age'] ?? [];
@@ -1141,7 +1144,7 @@ class EnrolmentController extends BaseController
         ]);
     }
 
-    public function remitReturn($id)                                
+    public function remitReturn($id)
     {
         $id = (int) $id;
 
@@ -1197,12 +1200,23 @@ class EnrolmentController extends BaseController
             return redirect()->to($this->nextStepUrl($enrolment));
         }
 
-        $member    = (new \App\Models\MemberModel())->find($enrolment->member_id);
-        $programme = (new ProgrammeModel())->find($enrolment->programme_id);
-        $prant     = (new PrantModel())->find($enrolment->prant_id);
-
         $generator = new \App\Libraries\Enrolment\ReceiptPdfGenerator();
-        $pdf       = $generator->generate($enrolment, $member, $programme, $prant);
+        $cacheDir  = WRITEPATH . 'receipt_cache';
+        $cachePath = $cacheDir . '/receipt-' . $enrolment->id . '.pdf';
+
+        if (is_file($cachePath)) {
+            $pdf = file_get_contents($cachePath);
+        } else {
+            $member    = (new \App\Models\MemberModel())->find($enrolment->member_id);
+            $programme = (new ProgrammeModel())->find($enrolment->programme_id);
+            $prant     = (new PrantModel())->find($enrolment->prant_id);
+            $pdf       = $generator->generate($enrolment, $member, $programme, $prant);
+
+            if (! is_dir($cacheDir)) {
+                mkdir($cacheDir, 0755, true);
+            }
+            @file_put_contents($cachePath, $pdf);
+        }
 
         return $this->response
             ->setHeader('Content-Type', 'application/pdf')

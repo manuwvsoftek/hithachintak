@@ -13,10 +13,17 @@ $exportQuery   = http_build_query($_GET);
   </div>
 </div>
 
+<?php if ($showCounts): ?>
 <div class="kpi-grid">
   <div class="kpi-card"><div class="kpi-label">Records<?= $activeFilters ? ' (filtered)' : '' ?></div><div class="kpi-value num"><?= number_format($totalPersons) ?></div><div class="kpi-sub"><?= number_format($totalCount) ?> enrolments, incl. family</div></div>
   <div class="kpi-card"><div class="kpi-label">Total Amount</div><div class="kpi-value num"><?= fmt_rupees($totalAmount) ?></div></div>
 </div>
+<?php else: ?>
+<div class="panel" style="text-align:center;padding:24px">
+  <p class="panel-note" style="margin-bottom:12px">Totals are hidden by default to keep this page fast during the campaign.</p>
+  <a class="btn btn-secondary btn-sm" href="<?= esc(site_url('admin/reports') . '?' . http_build_query(array_merge($_GET, ['showcounts' => 1]))) ?>">Show counts</a>
+</div>
+<?php endif; ?>
 
 <div class="panel">
   <form method="get" id="reportForm">
@@ -89,9 +96,14 @@ $exportQuery   = http_build_query($_GET);
       <?php if ($activeFilters): ?>
         <a class="btn btn-ghost btn-sm" href="<?= site_url('admin/reports') ?>">Clear filters</a>
       <?php endif; ?>
-      <a class="btn btn-navy btn-sm" href="<?= site_url('admin/reports/export.csv') . '?' . $exportQuery ?>">Export CSV</a>
-      <a class="btn btn-navy btn-sm" href="<?= site_url('admin/reports/export.xlsx') . '?' . $exportQuery ?>">Export Excel</a>
-      <a class="btn btn-navy btn-sm" href="<?= site_url('admin/reports/export.pdf') . '?' . $exportQuery ?>">Export PDF</a>
+      <?php /* target="_blank" sends the download through the full browser
+         instead of the standalone PWA window — a plain same-window
+         navigation to a file response can fail silently (no file, no
+         error) inside standalone display mode on both Android and iOS;
+         escaping to the browser is the standard fix for that. */ ?>
+      <a class="btn btn-navy btn-sm" href="<?= site_url('admin/reports/export.csv') . '?' . $exportQuery ?>" target="_blank" rel="noopener">Export CSV</a>
+      <a class="btn btn-navy btn-sm" href="<?= site_url('admin/reports/export.xlsx') . '?' . $exportQuery ?>" target="_blank" rel="noopener">Export Excel</a>
+      <a class="btn btn-navy btn-sm" href="<?= site_url('admin/reports/export.pdf') . '?' . $exportQuery ?>" target="_blank" rel="noopener">Export PDF</a>
     </div>
   </form>
 </div>
@@ -138,6 +150,7 @@ $exportQuery   = http_build_query($_GET);
   </form>
 </div>
 
+<?php if ($showCounts): ?>
 <div class="panel">
   <div class="panel-head"><div class="panel-title">Reconciliation Summary</div><span class="panel-note">Cash collected vs remitted, for this filter</span></div>
   <div class="kpi-grid" style="margin-bottom:0">
@@ -146,6 +159,7 @@ $exportQuery   = http_build_query($_GET);
     <div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value num"><?= fmt_rupees($outstanding) ?></div></div>
   </div>
 </div>
+<?php endif; ?>
 
 <div class="panel">
   <div class="panel-head"><div class="panel-title">Enrolments</div><span class="panel-note"><?= number_format($totalCount) ?> record<?= $totalCount !== 1 ? 's' : '' ?></span></div>

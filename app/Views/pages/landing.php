@@ -6,7 +6,7 @@
     <h1>Hithachintak Abhiyan</h1>
     <p class="landing-hero-sub">Vishwa Hindu Parishad's nationwide campaign for Hindu welfare — supporting Hithachintak, Dharma Raksha Nidhi and our Magazine Subscription programmes across every Prant in India.</p>
     <div class="landing-hero-actions">
-      <a class="btn btn-primary" href="<?= site_url('login') ?>">Donate Now</a>
+      <a class="btn btn-primary" href="<?= site_url('login') ?>">Enroll Now</a>
       <a class="btn btn-secondary" href="<?= site_url('login') ?>">Login</a>
     </div>
   </div>
@@ -54,7 +54,7 @@
 <section class="landing-cta-band">
   <h2>Join the Abhiyan</h2>
   <p>Every contribution, large or small, strengthens this nationwide effort.</p>
-  <a class="btn btn-primary" href="<?= site_url('login') ?>">Donate Now</a>
+  <a class="btn btn-primary" href="<?= site_url('login') ?>">Enroll Now</a>
 </section>
 
 <?= $this->endSection() ?>

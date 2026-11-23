@@ -109,12 +109,19 @@
 </div>
 <?php else: ?>
 
+<?php if ($showCounts): ?>
 <div class="kpi-grid">
   <div class="kpi-card"><div class="kpi-label">Hithachintaks<?= $activeFilters ? ' (filtered)' : '' ?></div><div class="kpi-value num"><?= number_format($totalPersons) ?></div><div class="kpi-sub"><?= number_format($totalCount) ?> enrolments, incl. family</div></div>
   <div class="kpi-card"><div class="kpi-label">Total Amount</div><div class="kpi-value num"><?= fmt_rupees($totalAmount) ?></div></div>
   <div class="kpi-card"><div class="kpi-label">Via UPI / QR / Autopay</div><div class="kpi-value num"><?= fmt_rupees($upiAmount) ?></div></div>
   <div class="kpi-card"><div class="kpi-label">Via Cash</div><div class="kpi-value num"><?= fmt_rupees($cashAmount) ?></div></div>
 </div>
+<?php else: ?>
+<div class="panel" style="text-align:center;padding:24px">
+  <p class="panel-note" style="margin-bottom:12px">Totals are hidden by default to keep this page fast during the campaign.</p>
+  <a class="btn btn-secondary btn-sm" href="<?= esc(site_url('admin/enrolments') . '?' . http_build_query(array_merge($_GET, ['showcounts' => 1]))) ?>">Show counts</a>
+</div>
+<?php endif; ?>
 
 <div class="panel">
   <form method="get">

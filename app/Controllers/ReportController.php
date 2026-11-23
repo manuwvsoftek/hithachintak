@@ -250,39 +250,44 @@ class ReportController extends BaseController
 
         $rows = $this->expandWithFamilyMembers($rows);
 
-        $sums = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
-            ->select('
-                SUM(enrolments.amount) AS total_amount,
-                SUM(CASE WHEN enrolments.payment_mode = "cash" THEN enrolments.amount ELSE 0 END) AS cash_amount
-            ', false)
-            ->first();
-        $totalAmount   = (float) ($sums?->total_amount ?? 0);
-        $cashCollected = (float) ($sums?->cash_amount ?? 0);
+        // CAMPAIGN LITE MODE — the KPI/reconciliation blocks below (amount
+        // totals, person headcount, cash-remitted reconciliation) are each
+        // an extra query beyond the one the page actually needs (the
+        // paginated, family-expanded list above). Hidden and left at
+        // cheap defaults unless "Show counts" (?showcounts=1) is clicked
+        // — nothing auto-runs these on every page load, only an explicit
+        // click.
+        $totalAmount   = 0.0;
+        $cashCollected = 0.0;
+        $totalPersons  = $pager->getTotal();
+        $remitted      = 0.0;
+        $showCounts    = (bool) $this->request->getGet('showcounts');
 
-        // Headcount including family members — a single enrolment row can
-        // cover several people (the head of family plus each additional
-        // member added at the same sitting), so the row count alone
-        // undercounts how many people this filtered report actually
-        // covers. A plain aggregate (no GROUP BY) always collapses to
-        // exactly one row, so this is safe regardless of table size.
-        $headcount = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->withDetails())
-            ->join('enrolment_family_members efm', 'efm.enrolment_id = enrolments.id', 'left')
-            ->select('COUNT(DISTINCT enrolments.id) AS enrolment_count, COUNT(efm.id) AS family_count', false)
-            ->first();
-        $totalPersons = (int) ($headcount->enrolment_count ?? 0) + (int) ($headcount->family_count ?? 0);
+        if ($showCounts) {
+            $sums = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
+                ->select('
+                    SUM(enrolments.amount) AS total_amount,
+                    SUM(CASE WHEN enrolments.payment_mode = "cash" THEN enrolments.amount ELSE 0 END) AS cash_amount
+                ', false)
+                ->first();
+            $totalAmount   = (float) ($sums?->total_amount ?? 0);
+            $cashCollected = (float) ($sums?->cash_amount ?? 0);
 
-        // Cash actually remitted is tracked on cash_remittances, not
-        // inferred from the enrolment's own status, for an accurate
-        // reconciliation figure — same set of collectors as the filtered
-        // enrolments, without re-fetching every one of their rows.
-        $userIds = array_column(
-            $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
-                ->select('enrolments.collected_by_user_id')->distinct()->findAll(),
-            'collected_by_user_id'
-        );
-        $remitted = $userIds === [] ? 0.0 : (float) ((new CashRemittanceModel())
-            ->whereIn('user_id', $userIds)->where('status', 'remitted')
-            ->selectSum('amount')->first()['amount'] ?? 0);
+            $headcount = $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
+                ->join('enrolment_family_members efm', 'efm.enrolment_id = enrolments.id', 'left')
+                ->select('COUNT(DISTINCT enrolments.id) AS enrolment_count, COUNT(efm.id) AS family_count', false)
+                ->first();
+            $totalPersons = (int) ($headcount->enrolment_count ?? 0) + (int) ($headcount->family_count ?? 0);
+
+            $userIds = array_column(
+                $this->applyFilters((new EnrolmentModel())->scopedTo($actor)->joinDetails())
+                    ->select('enrolments.collected_by_user_id')->distinct()->findAll(),
+                'collected_by_user_id'
+            );
+            $remitted = $userIds === [] ? 0.0 : (float) ((new CashRemittanceModel())
+                ->whereIn('user_id', $userIds)->where('status', 'remitted')
+                ->selectSum('amount')->first()['amount'] ?? 0);
+        }
 
         $get = $this->request->getGet();
 
@@ -292,6 +297,7 @@ class ReportController extends BaseController
             'pager'         => $pager,
             'totalCount'    => $pager->getTotal(),
             'totalPersons'  => $totalPersons,
+            'showCounts'    => $showCounts,
             'totalAmount'   => $totalAmount,
             'programmes'    => (new ProgrammeModel())->active(),
             'prants'        => (new PrantModel())->orderBy('name', 'ASC')->findAll(),

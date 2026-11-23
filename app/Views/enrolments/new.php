@@ -194,7 +194,6 @@
   var PROFESSIONS = <?= json_encode($professions) ?>;
   var RESUME_DRAFT = <?= json_encode($resumeDraft) ?>;
   var RESUME_DRAFT_ID = <?= json_encode($resumeDraftId) ?>;
-  var CSRF_NAME = <?= json_encode(csrf_token()) ?>;
   var FORCE_SELF = <?= json_encode($forceSelf) ?>;
   var GENDER_OPTIONS = <?= json_encode([
     'Male' => $t['male'],
@@ -210,7 +209,6 @@
 
   var form = document.getElementById('enrolForm');
   var draftIdInput = document.getElementById('draftIdInput');
-  var csrfInput = form.querySelector('input[name="' + CSRF_NAME + '"]');
   var autosaveNote = document.getElementById('autosaveNote');
   var panField = document.getElementById('panField');
   var memberPan = document.getElementById('memberPan');
@@ -658,9 +656,14 @@
     return true;
   }
 
-  // ---- Autosave: localStorage first (survives offline/refresh/close),
-  // best-effort sync to the server so the draft shows up in the
-  // Enrolments list' "Pending Drafts" tab from any device. ----
+  // ---- Autosave: localStorage only — no server round-trip at all. At
+  // thousands of Karyakartas filling this form at once, even a throttled
+  // sync adds up to a steady stream of writes; local storage costs the
+  // database nothing and already covers the real failure mode this
+  // protects against (this device's browser crashing or the tab getting
+  // killed mid-entry). What it gives up: resuming the same draft on a
+  // *different* device, or after this device's storage is cleared —
+  // resuming on the same device/browser still works exactly as before. ----
   function uuid(){
     if (window.crypto && crypto.randomUUID) { return crypto.randomUUID(); }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
@@ -722,32 +725,13 @@
     try { localStorage.setItem('vhp_draft_' + state.draft_id, JSON.stringify(state)); } catch (err) { /* storage full/unavailable */ }
   }
 
-  var autosaveTimer = null;
-  function saveRemote(state){
-    var fd = new FormData();
-    fd.append('draft_id', state.draft_id);
-    fd.append('payload', JSON.stringify(state));
-    fd.append(CSRF_NAME, csrfInput ? csrfInput.value : '');
-    fetch('<?= site_url('admin/enrolments/draft') ?>', { method: 'POST', body: fd, credentials: 'same-origin' })
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(data){
-        if (data && data[CSRF_NAME]) {
-          if (window.vhpSyncCsrf) { window.vhpSyncCsrf(CSRF_NAME, data[CSRF_NAME]); }
-          else if (csrfInput) { csrfInput.value = data[CSRF_NAME]; }
-        }
-        if (autosaveNote) {
-          var now = new Date();
-          autosaveNote.textContent = 'Saved ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
-        }
-      })
-      .catch(function(){ /* offline — localStorage already has it, retried on next edit */ });
-  }
-
   function scheduleAutosave(){
     ensureDraftId();
     saveLocal(collectState());
-    clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(function(){ saveRemote(collectState()); }, 1200);
+    if (autosaveNote) {
+      var now = new Date();
+      autosaveNote.textContent = 'Saved on this device ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+    }
   }
 
   form.addEventListener('input', scheduleAutosave);

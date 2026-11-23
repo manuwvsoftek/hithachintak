@@ -3,7 +3,7 @@
 
 <?= $this->include('users/_tabs') ?>
 
-
+<?php if ($showCounts): ?>
 <div class="panel">
   <div class="panel-head"><div class="panel-title">Access Hierarchy</div><span class="panel-note">Count of active users per level<?= ($filterPrantId || $filterJilaId || $filterPrakhandId || ($_GET['q'] ?? '')) ? ' (filtered)' : '' ?></span></div>
   <div class="kpi-grid">
@@ -15,6 +15,12 @@
     <?php endforeach; ?>
   </div>
 </div>
+<?php else: ?>
+<div class="panel" style="text-align:center;padding:24px">
+  <p class="panel-note" style="margin-bottom:12px">Per-role counts are hidden by default to keep this page fast during the campaign.</p>
+  <a class="btn btn-secondary btn-sm" href="<?= esc(site_url('admin/users') . '?' . http_build_query(array_merge($_GET, ['showcounts' => 1]))) ?>">Show counts</a>
+</div>
+<?php endif; ?>
 
 <div class="panel">
   <div class="panel-head">
@@ -119,11 +125,5 @@
   </div>
    <div style="margin-top:14px"><?= $pager->links() ?></div>
 </div>
-
-
-
-
-
-
 
 <?= $this->endSection() ?>

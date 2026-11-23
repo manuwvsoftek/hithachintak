@@ -131,6 +131,12 @@ class AuthController extends BaseController
     {
         $model = new RolePermissionModel();
         $candidates = [
+            // CAMPAIGN LITE MODE — New Enrolment moved to the very front
+            // so everyone lands straight on a blank enrolment form instead
+            // of Dashboard, minimizing clicks to the one thing that
+            // matters during the high-traffic window. Remove this one
+            // line to revert to the normal Dashboard-first order below.
+            ['admin/enrolments/new', 'Enrolments', 'Own'],
             ['admin', 'Dashboard', 'Own'],
             ['admin/settings', 'Settings & Integrations', 'Full'],
             ['admin/enrolments', 'Enrolments', 'Own'],

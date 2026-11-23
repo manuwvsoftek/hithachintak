@@ -43,13 +43,15 @@
     installBtn.addEventListener('click', function(){
       alert('Tap the Share icon, then "Add to Home Screen".');
     });
-    banner.hidden = false;
+    //banner.hidden = false;
+    banner.hidden = true;
   } else {
     var deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', function(e){
       e.preventDefault();
       deferredPrompt = e;
-      banner.hidden = false;
+      //banner.hidden = false;
+      banner.hidden = true;
     });
     installBtn.addEventListener('click', function(){
       if (!deferredPrompt) return;
