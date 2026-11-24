@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Entities\Enrolment;
 use App\Entities\User;
 use App\Models\CashRemittanceModel;
 use App\Models\EnrolmentFamilyMemberModel;
@@ -58,6 +59,8 @@ class ReportController extends BaseController
         }
         if (! empty($get['status'])) {
             $model->where('enrolments.status', $get['status']);
+        } else {
+            $model->whereIn('enrolments.status', Enrolment::RECEIPTED_STATUSES);
         }
         if (! empty($get['mode'])) {
             $model->where('enrolments.payment_mode', $get['mode']);
