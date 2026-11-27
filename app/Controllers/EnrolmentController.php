@@ -72,6 +72,22 @@ class EnrolmentController extends BaseController
     }
 
     /**
+     * Manual payment reconciliation bypasses the gateway's own payment
+     * verification entirely — it exists only for the rare case of a
+     * genuine payment whose webhook never arrived, not as a general
+     * "mark this paid" shortcut. Restricted to Dev Admin (a technical/
+     * support account, not part of the field admin hierarchy) rather than
+     * gated through the normal module-permission system, same spirit as
+     * the Dev Admin exemptions elsewhere in this controller.
+     */
+    private function requireDevAdmin(): void
+    {
+        if (! $this->currentUser()->isDevAdmin()) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+    }
+
+    /**
      * A filter GET param applied identically wherever the same filtered set
      * of enrolments is needed — the list itself, the quick-stat totals
      * above it, and the CSV export — so all three always agree with each
@@ -931,6 +947,62 @@ class EnrolmentController extends BaseController
             // itself instead of making the Karyakarta click again.
             'autoPay'   => (bool) $this->request->getGet('auto')  && count($availableGateways) === 1,
         ]);
+    }
+
+    /**
+     * Manual payment reconciliation — Dev Admin only. For an online
+     * enrolment still sitting in awaiting_payment because the gateway's
+     * webhook/return callback never reached the platform (a dropped or
+     * late response under heavy load), even though the member's payment
+     * genuinely went through at the gateway. Confirm the payment in the
+     * Cashfree/Razorpay dashboard first — this form does not itself
+     * verify anything with the gateway.
+     */
+    public function showManualReconcile($id)
+    {
+        $this->requireDevAdmin();
+        $id = (int) $id;
+
+        $enrolment = $this->authorize($id);
+        if ($enrolment->isPaid() || $enrolment->status !== Enrolment::STATUS_AWAITING_PAYMENT) {
+            return redirect()->to($this->nextStepUrl($enrolment))
+                ->with('error', "This enrolment isn't awaiting an online payment, so there's nothing to reconcile.");
+        }
+
+        $member    = (new \App\Models\MemberModel())->find($enrolment->member_id);
+        $programme = (new ProgrammeModel())->find($enrolment->programme_id);
+
+        return view('enrolments/manual_reconcile', [
+            'title'     => 'Manual Payment Reconciliation',
+            'enrolment' => $enrolment,
+            'member'    => $member,
+            'programme' => $programme,
+        ]);
+    }
+
+    public function manualReconcile($id)
+    {
+        $this->requireDevAdmin();
+        $id = (int) $id;
+
+        $enrolment = $this->authorize($id);
+        if ($enrolment->isPaid() || $enrolment->status !== Enrolment::STATUS_AWAITING_PAYMENT) {
+            return redirect()->to($this->nextStepUrl($enrolment))
+                ->with('error', "This enrolment isn't awaiting an online payment, so there's nothing to reconcile.");
+        }
+
+        $gateway   = (string) $this->request->getPost('gateway');
+        $reference = trim((string) $this->request->getPost('payment_reference'));
+        $note      = trim((string) $this->request->getPost('note'));
+
+        if (! in_array($gateway, ['cashfree', 'razorpay'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Select which gateway actually processed this payment.');
+        }
+
+        $this->service()->markPaidManually($enrolment, $gateway, $reference !== '' ? $reference : null, $note !== '' ? $note : null, $this->currentUser());
+
+        return redirect()->to("/admin/enrolments/{$id}/receipt")
+            ->with('success', 'Payment reconciled and receipt generated.');
     }
 
     /** Validates a posted gateway choice against what's actually available for this Prant, auto-picking the only option when there's just one. */

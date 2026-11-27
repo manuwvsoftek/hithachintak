@@ -12,6 +12,7 @@ use App\Libraries\Msg91\Msg91Sms;
 use App\Libraries\Msg91\Msg91WhatsApp;
 use App\Libraries\Notify\EmailSender;
 use App\Libraries\Razorpay\RazorpayClient;
+use App\Models\AuditLogModel;
 use App\Models\AutopaySubscriptionModel;
 use App\Models\CashRemittanceModel;
 use App\Models\EnrolmentFamilyMemberModel;
@@ -52,6 +53,7 @@ class EnrolmentService
         private readonly CashfreeClient $cashfree = new CashfreeClient(),
         private readonly RazorpayClient $razorpay = new RazorpayClient(),
         private readonly GatewayCredentialModel $gatewayCredentials = new GatewayCredentialModel(),
+        private readonly AuditLogModel $auditLog = new AuditLogModel(),
     ) {
         helper('app');
     }
@@ -506,7 +508,7 @@ class EnrolmentService
             'authorized_at' => date('Y-m-d H:i:s'),
         ]);
     }
-    
+
     /**
      * Called from the Cashfree webhook for a subscription lifecycle change
      * that isn't a payment (cancelled/paused by the donor's bank or by
@@ -757,6 +759,61 @@ class EnrolmentService
 
         $enrolment = $this->enrolments->find($enrolment->id);
         $this->finalizeReceipt($enrolment);
+    }
+
+    /**
+     * Manual payment reconciliation — Dev Admin only (see
+     * EnrolmentController::requireDevAdmin()). For the rare case where a
+     * gateway payment genuinely succeeded but its webhook/return-URL
+     * callback never reached the platform (a slow or dropped response
+     * from the gateway during the campaign's peak load), rather than the
+     * payment never having happened at all. Deliberately mirrors
+     * markGatewayPaid()'s own update-then-finalizeReceipt() sequence, so
+     * the resulting receipt/SMS/email are indistinguishable from a normal
+     * automated payment — this stands in for the webhook that should have
+     * arrived, not a separate kind of payment. Idempotent, same as
+     * markGatewayPaid(): an already-paid enrolment is returned untouched.
+     */
+    public function markPaidManually(Enrolment $enrolment, string $gateway, ?string $paymentReference, ?string $note, User $actor): Enrolment
+    {
+        if ($enrolment->isPaid()) {
+            return $enrolment;
+        }
+
+        $data = [
+            'payment_gateway' => $gateway,
+            'status'          => Enrolment::STATUS_PAID,
+            'paid_at'         => date('Y-m-d H:i:s'),
+        ];
+
+        if (empty($enrolment->payment_mode)) {
+            $data['payment_mode'] = 'upi';
+        }
+
+        if ($gateway === 'razorpay') {
+            $data['razorpay_order_status'] = 'paid';
+            if ($paymentReference !== null) {
+                $data['razorpay_payment_id'] = $paymentReference;
+            }
+        } else {
+            $data['cashfree_order_status'] = 'PAID';
+            if ($paymentReference !== null) {
+                $data['cashfree_payment_id'] = $paymentReference;
+            }
+        }
+
+        $this->enrolments->update($enrolment->id, $data);
+
+        $enrolment = $this->enrolments->find($enrolment->id);
+        $this->finalizeReceipt($enrolment);
+
+        $this->auditLog->record($actor->id, 'enrolment_manually_reconciled', 'enrolment', $enrolment->id, [
+            'gateway'   => $gateway,
+            'reference' => $paymentReference,
+            'note'      => $note,
+        ]);
+
+        return $this->enrolments->find($enrolment->id);
     }
 
     private function finalizeReceipt(Enrolment $enrolment): void

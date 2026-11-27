@@ -132,6 +132,13 @@ $routes->group('admin', ['filter' => 'authGuard'], static function ($routes) {
         $routes->post('awaiting/remove', 'EnrolmentController::removeAwaiting');
     });
 
+    // Manual payment reconciliation — Dev Admin only (enforced in the
+    // controller via requireDevAdmin()), deliberately outside the
+    // 'enrolments' group's permission filter since Dev Admin doesn't
+    // hold that permission; only the outer group's authGuard applies here.
+    $routes->get('enrolments/(:num)/manual-reconcile', 'EnrolmentController::showManualReconcile/$1');
+    $routes->post('enrolments/(:num)/manual-reconcile', 'EnrolmentController::manualReconcile/$1');
+
     $routes->group('reports', ['filter' => 'permission:Reports,View'], static function ($routes) {
         $routes->get('/', 'ReportController::index');
         $routes->get('export.csv', 'ReportController::exportCsv');
@@ -172,3 +179,6 @@ $routes->group('app', ['filter' => 'authGuard'], static function ($routes) {
     $routes->get('collections', 'KaryakartaController::collections');
     $routes->get('profile', 'KaryakartaController::profile');
 });
+
+
+

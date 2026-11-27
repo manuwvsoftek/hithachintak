@@ -1042,6 +1042,19 @@ class UsersController extends BaseController
             }
         }
 
+        // This account's own receipted Hithachintak enrolments — distinct
+        // from $totalHc above (the rollup across accounts THIS one
+        // created). A Karyakarta with no created users of their own still
+        // has their own field collections worth showing here.
+        $targetOwnHc = 0;
+        if ($hcProgramme) {
+            $targetOwnHc = (new EnrolmentModel())
+                ->where('programme_id', $hcProgramme['id'])
+                ->where('receipt_no IS NOT NULL')
+                ->where('collected_by_user_id', $target->id)
+                ->countAllResults();
+        }
+
         return view('users/activity', [
             'title'            => 'Activity — ' . $target->name,
             'target'           => $target,
@@ -1049,6 +1062,7 @@ class UsersController extends BaseController
             'createdUsers'     => $createdUsers,
             'hcCountByUser'    => $hcCountByUser,
             'totalHc'          => $totalHc,
+            'targetOwnHc'      => $targetOwnHc,
             'prants'           => (new PrantModel())->orderBy('name', 'ASC')->findAll(),
             'jilas'            => $filterPrantId ? (new JilaModel())->forPrant($filterPrantId) : [],
             'prakhands'        => $filterJilaId ? (new PrakhandModel())->forJila($filterJilaId) : [],

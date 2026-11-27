@@ -10,6 +10,10 @@
   <div class="panel-head"><div class="panel-title">Summary</div></div>
   <div class="kpi-grid">
     <div class="kpi-card">
+      <div class="kpi-label"><?= esc($target->name) ?>'s Own Hithachintak</div>
+      <div class="kpi-value num"><?= number_format($targetOwnHc) ?></div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">Users Created</div>
       <div class="kpi-value num"><?= number_format(count($createdUsers)) ?></div>
     </div>
